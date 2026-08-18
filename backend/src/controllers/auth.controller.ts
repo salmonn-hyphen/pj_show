@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { auth } from "../src/lib/auth.js";
+import { auth } from "../lib/auth.js";
 import {
   AuthServiceError,
   createRegistrationRequest,
@@ -10,7 +10,7 @@ import {
   revokeCustomSessionByAccessToken,
   revokeCustomSessionByRefreshToken,
   verifyRegistration,
-} from "../service/authService.js";
+} from "../../service/authService.js";
 
 function handleError(res: Response, error: unknown) {
   if (error instanceof AuthServiceError) {
@@ -149,7 +149,6 @@ export async function logout(req: Request, res: Response) {
       console.debug("[authController] auth.api.signOut failed", e);
     }
 
-    // Clear all cookies
     res.clearCookie("accessToken", getCookieOptions(0));
     res.clearCookie("refreshToken", getCookieOptions(0));
     res.clearCookie("session", getCookieOptions(0));

@@ -9,7 +9,9 @@ export async function getKyc(req: Request, res: Response) {
     }
 
     if (user.role !== "DRIVER") {
-      return res.status(403).json({ error: "Forbidden: Only drivers can query driver KYC status" });
+      return res
+        .status(403)
+        .json({ error: "Forbidden: Only drivers can query driver KYC status" });
     }
 
     const kycProfile = await getDriverKyc(user.id);
@@ -19,7 +21,9 @@ export async function getKyc(req: Request, res: Response) {
     });
   } catch (error: any) {
     console.error("Get KYC controller error:", error);
-    return res.status(400).json({ error: error.message || "Internal server error" });
+    return res
+      .status(400)
+      .json({ error: error.message || "Internal server error" });
   }
 }
 
@@ -31,22 +35,36 @@ export async function uploadKyc(req: Request, res: Response) {
     }
 
     if (user.role !== "DRIVER") {
-      return res.status(403).json({ error: "Forbidden: Only drivers can upload driver KYC" });
+      return res
+        .status(403)
+        .json({ error: "Forbidden: Only drivers can upload driver KYC" });
     }
 
-    const files = (req as any).files as { [fieldname: string]: any[] } | undefined;
-    
+    const files = (req as any).files as
+      | { [fieldname: string]: any[] }
+      | undefined;
+
     const nrcFront = files?.nrcFront?.[0];
     const nrcBack = files?.nrcBack?.[0];
     const selfie = files?.selfie?.[0];
     const drivingLicenseFront = files?.drivingLicenseFront?.[0];
     const drivingLicenseBack = files?.drivingLicenseBack?.[0];
 
-    if (!nrcFront || !nrcBack || !selfie || !drivingLicenseFront || !drivingLicenseBack) {
-      return res.status(400).json({ error: "Missing required KYC documents (nrcFront, nrcBack, selfie, drivingLicenseFront, drivingLicenseBack)" });
+    if (
+      !nrcFront ||
+      !nrcBack ||
+      !selfie ||
+      !drivingLicenseFront ||
+      !drivingLicenseBack
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Missing required KYC documents (nrcFront, nrcBack, selfie, drivingLicenseFront, drivingLicenseBack)",
+        });
     }
 
-    // Validate file sizes (5MB limit)
     const MAX_SIZE = 5 * 1024 * 1024;
     if (
       nrcFront.size > MAX_SIZE ||
@@ -73,6 +91,8 @@ export async function uploadKyc(req: Request, res: Response) {
     });
   } catch (error: any) {
     console.error("Upload KYC controller error:", error);
-    return res.status(400).json({ error: error.message || "Internal server error" });
+    return res
+      .status(400)
+      .json({ error: error.message || "Internal server error" });
   }
 }

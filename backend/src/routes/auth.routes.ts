@@ -1,15 +1,14 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { toNodeHandler } from "better-auth/node";
-import { auth } from "../src/lib/auth.js";
+import { auth } from "../lib/auth.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import {
   loginSchema,
   registerRequestSchema,
   registerVerifySchema,
-  getEmailByPhoneSchema,
-} from "../src/lib/validation-schemas.js";
+} from "../lib/validation-schemas.js";
 import {
   getEmailByPhoneController,
   login,
@@ -18,11 +17,10 @@ import {
   registerRequest,
   registerVerify,
   session,
-} from "../controller/authController.js";
+} from "../controllers/auth.controller.js";
 
 const router = Router();
 
-// Rate limiting for auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,

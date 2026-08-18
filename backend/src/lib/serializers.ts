@@ -85,7 +85,6 @@ export function serializeOwnerProfile(ownerProfile: any, user?: any) {
     id: ownerProfile.id,
     user_id: ownerProfile.userId,
     nrc_text: ownerProfile.nrcText,
-    nrc_number: ownerProfile.nrcText,
     nrc_front_image: ownerProfile.nrcFrontImage,
     nrc_back_image: ownerProfile.nrcBackImage,
     address: ownerProfile.address || user?.address || "",

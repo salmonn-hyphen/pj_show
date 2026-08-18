@@ -3,15 +3,15 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import { authMiddleware } from "../middleware/auth.js";
-import { updateProfile } from "../controller/driverController.js";
-import { getKyc, uploadKyc } from "../controller/admin/driverController.js";
+import { updateProfile } from "../controllers/driver.controller.js";
+import { getKyc, uploadKyc } from "../controllers/driver-kyc.controller.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {
-    cb(null, path.resolve(__dirname, "../uploads/kyc"));
+    cb(null, path.resolve(__dirname, "../../uploads/kyc"));
   },
   filename: (_req, file, cb) => {
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;

@@ -1,6 +1,6 @@
-import { auth } from "../src/lib/auth.js";
-import prisma from "../src/lib/prisma.js";
-import { getCookieOptions, revokeCustomSession, hashToken } from "../src/lib/auth-service.js";
+import { auth } from "../lib/auth.js";
+import prisma from "../lib/prisma.js";
+import { getCookieOptions, revokeCustomSession, hashToken } from "../lib/auth-service.js";
 import type { Request, Response, NextFunction } from "express";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -37,7 +37,6 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    // Try to find valid access token
     const account = await prisma.account.findFirst({
       where: {
         accessToken,
@@ -60,7 +59,6 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       return next();
     }
 
-    // Access token expired - try refresh token
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -78,15 +76,13 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     });
 
     if (!refreshAccount) {
-      // Clear all cookies since refresh is also invalid
       res.clearCookie("accessToken", getCookieOptions(0));
       res.clearCookie("refreshToken", getCookieOptions(0));
       res.clearCookie("session", getCookieOptions(0));
       return res.status(401).json({ error: "Session expired. Please log in again." });
     }
 
-    // Generate new tokens
-    const { buildSessionTokens, persistTokens } = await import("../src/lib/auth-service.js");
+    const { buildSessionTokens, persistTokens } = await import("../lib/auth-service.js");
     const newTokens = buildSessionTokens();
     await persistTokens(refreshAccount.userId, newTokens);
 
@@ -97,7 +93,6 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    // Set new cookies
     res.cookie("accessToken", newTokens.accessToken, getCookieOptions(15 * 60 * 1000));
     res.cookie("refreshToken", newTokens.refreshToken, getCookieOptions(30 * 24 * 60 * 60 * 1000));
     res.cookie("session", newTokens.accessToken, getCookieOptions(15 * 60 * 1000));

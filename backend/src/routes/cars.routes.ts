@@ -1,61 +1,9 @@
 import { Router } from "express";
-import prisma from "../lib/prisma.js";
-import { isApprovedOwner, serializeCar } from "../lib/serializers.js";
+import { listAvailableCars, getCarById } from "../controllers/cars.controller.js";
 
 const router = Router();
 
-router.get("/", async (_req, res) => {
-  try {
-    const cars = await prisma.car.findMany({
-      where: {
-        adminApprovalStatus: "APPROVED",
-        availabilityStatus: "AVAILABLE",
-        owner: {
-          OR: [
-            { verificationStatus: "APPROVED" },
-            {
-              ownerProfile: {
-                is: { adminApprovalStatus: "APPROVED" },
-              },
-            },
-          ],
-        },
-      },
-      include: { carImages: true, owner: { include: { ownerProfile: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-
-    return res.json({
-      data: cars.map(serializeCar),
-      meta: { current_page: 1, per_page: cars.length, total: cars.length, last_page: 1 },
-    });
-  } catch (error: any) {
-    console.error("List cars error:", error);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-router.get("/:carId", async (req, res) => {
-  try {
-    const car = await prisma.car.findUnique({
-      where: { id: req.params.carId },
-      include: { carImages: true, owner: { include: { ownerProfile: true } } },
-    });
-
-    if (
-      !car ||
-      car.adminApprovalStatus !== "APPROVED" ||
-      car.availabilityStatus !== "AVAILABLE" ||
-      !isApprovedOwner(car.owner)
-    ) {
-      return res.status(404).json({ error: "Car not found" });
-    }
-
-    return res.json({ data: serializeCar(car) });
-  } catch (error: any) {
-    console.error("Get car error:", error);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
+router.get("/", listAvailableCars);
+router.get("/:carId", getCarById);
 
 export default router;

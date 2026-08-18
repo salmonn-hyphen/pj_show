@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { updateProfile as updateProfileService } from "../service/driverService.js";
+import { updateProfile as updateProfileService } from "../../service/driverService.js";
 
 export async function updateProfile(req: Request, res: Response) {
   try {
