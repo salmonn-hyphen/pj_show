@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import prisma from "../lib/prisma.js";
 import { auth } from "../lib/auth.js";
 import {
   AuthServiceError,
@@ -161,13 +162,26 @@ export async function logout(req: Request, res: Response) {
 
 export async function session(req: Request, res: Response) {
   try {
-    const user = (req as any).user;
-    const sessionValue = (req as any).session;
+    const authUser = (req as any).user;
+    const user = await prisma.user.findUnique({
+      where: { id: authUser.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        emailVerified: true,
+        verificationStatus: true,
+        profilePhoto: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
     return res.json({
       success: true,
       user,
-      session: sessionValue,
     });
   } catch (error) {
     return handleError(res, error);

@@ -62,9 +62,9 @@ export const updateOwnerProfile = async (req: Request, res: Response) => {
       },
       update: {
         address,
-        ...(nrcText !== undefined ? { nrcText } : {}),
-        adminApprovalStatus: "PENDING",
-        approvedAt: null,
+        ...(nrcText !== undefined
+          ? { nrcText, adminApprovalStatus: "PENDING", approvedAt: null }
+          : {}),
       },
     });
 
@@ -75,8 +75,9 @@ export const updateOwnerProfile = async (req: Request, res: Response) => {
         address,
         city,
         township,
-        verificationStatus: "PENDING",
-        isVerified: false,
+        ...(nrcText !== undefined
+          ? { verificationStatus: "PENDING", isVerified: false }
+          : {}),
       },
       include: { ownerProfile: true },
     });

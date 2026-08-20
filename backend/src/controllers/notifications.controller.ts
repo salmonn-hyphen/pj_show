@@ -54,6 +54,22 @@ export async function markAllNotificationsRead(req: Request, res: Response) {
   }
 }
 
+export async function deleteNotification(req: Request, res: Response) {
+  try {
+    const authUser = await requireUser(req, res);
+    if (!authUser) return;
+
+    await prisma.notification.deleteMany({
+      where: { id: req.params.id, receiverId: authUser.id },
+    });
+
+    return res.json({ success: true });
+  } catch (error: any) {
+    console.error("Delete notification error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
 export async function getUnreadNotificationCount(req: Request, res: Response) {
   try {
     const authUser = await requireUser(req, res);

@@ -3,7 +3,7 @@ import crypto from "crypto";
 import prisma from "../lib/prisma.js";
 import { requireUser } from "../lib/api-auth.js";
 import { serializeBooking } from "../lib/serializers.js";
-import { serializeBookingWithFinancials } from "../lib/booking-finance.js";
+import { serializeBookingsWithFinancials } from "../lib/booking-finance.js";
 
 export const listAdminBookings = async (req: Request, res: Response) => {
   try {
@@ -32,7 +32,7 @@ export const listAdminBookings = async (req: Request, res: Response) => {
       orderBy: { updatedAt: "desc" },
     });
 
-    const data = await Promise.all(applications.map(serializeBookingWithFinancials));
+    const data = await serializeBookingsWithFinancials(applications);
 
     return res.json({
       data,

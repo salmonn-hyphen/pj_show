@@ -131,6 +131,27 @@ export async function listOwnerCars(req: Request, res: Response) {
   }
 }
 
+export async function getOwnerCar(req: Request, res: Response) {
+  try {
+    const authUser = await requireUser(req, res, ["OWNER"]);
+    if (!authUser) return;
+
+    const car = await prisma.car.findFirst({
+      where: { id: req.params.carId, ownerId: authUser.id },
+      include: { carImages: true, owner: { include: { ownerProfile: true } } },
+    });
+
+    if (!car) {
+      return res.status(404).json({ error: "Car not found" });
+    }
+
+    return res.json({ data: serializeCar(car) });
+  } catch (error: any) {
+    console.error("Get owner car error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
 export async function createCar(req: Request, res: Response) {
   try {
     const authUser = await requireUser(req, res, ["OWNER"]);

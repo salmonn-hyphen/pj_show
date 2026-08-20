@@ -10,7 +10,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { useAuth } from '@/providers'
 import { bookingsApi, usersApi } from '@/api'
 import type { Booking } from '@/types'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 import { ArrowRight, Calendar, Car, CheckCircle2, Clock3, Eye, Loader2, ShieldAlert, User, Wallet, XCircle } from 'lucide-react'
 
 function canCancelDriverBooking(booking: Booking) {
@@ -237,7 +237,7 @@ const DriverBookingCard = memo(function DriverBookingCard({
                         Requested {formatDate(booking.created_at)}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">Booking #{booking.id}</p>
+                    <p className="text-xs text-muted-foreground">{bookingRef(booking.id)}</p>
                   </div>
 
                   <div className="grid gap-2 text-sm text-slate-600 md:grid-cols-2">

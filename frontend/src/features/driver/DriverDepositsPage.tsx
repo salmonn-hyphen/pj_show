@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 import { Landmark } from 'lucide-react'
 
 export function DriverDepositsPage() {
@@ -32,7 +32,7 @@ export function DriverDepositsPage() {
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Landmark className="w-5 h-5" /></div>
                   <div>
                     <p className="font-medium">{formatCurrency(deposit.amount)}</p>
-                    <p className="text-xs text-muted-foreground">Booking #{deposit.booking_id} &middot; {formatDate(deposit.paid_at)}</p>
+                    <p className="text-xs text-muted-foreground">{bookingRef(deposit.booking_id)} &middot; {formatDate(deposit.paid_at)}</p>
                   </div>
                 </div>
                 <StatusBadge status={deposit.status} type="deposit" />

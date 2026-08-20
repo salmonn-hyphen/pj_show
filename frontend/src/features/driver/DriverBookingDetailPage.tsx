@@ -12,7 +12,7 @@ import { PAYMENT_METHODS } from '@/constants'
 import { bookingsApi, paymentsApi, depositsApi } from '@/api'
 import { useToast } from '@/providers'
 import type { Booking } from '@/types'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 
 function canCancelDriverBooking(booking: Booking) {
   const paymentStatus = booking.payment_status || booking.payment?.status || 'incomplete'
@@ -142,7 +142,7 @@ export function DriverBookingDetailPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h1 className="text-2xl font-bold text-slate-950">Booking #{booking.id}</h1>
+                      <h1 className="text-2xl font-bold text-slate-950">{bookingRef(booking.id)}</h1>
                       <StatusBadge status={booking.status} type="booking" />
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">{carName}</p>

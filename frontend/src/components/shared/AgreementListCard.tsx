@@ -4,36 +4,9 @@ import { FileText } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { agreementsApi, type Agreement } from '@/api/agreements'
+import { agreementPath, getAgreementExpireDate } from '@/utils/agreements'
 import { useAuth } from '@/providers'
 import { formatDate } from '@/utils/format'
-
-function agreementPath(role: string | undefined, id: string | number) {
-  const normalizedRole = role?.toUpperCase()
-  if (normalizedRole === 'OWNER') return `/owner/agreements/${id}`
-  if (normalizedRole === 'DRIVER') return `/driver/agreements/${id}`
-  return `/admin/agreements/${id}`
-}
-
-function parseRentalMonths(value?: string | null) {
-  if (!value) return null
-  const match = String(value).match(/\d+/)
-  return match ? Number(match[0]) : null
-}
-
-function addMonths(date: Date, months: number) {
-  const next = new Date(date)
-  next.setMonth(next.getMonth() + months)
-  return next
-}
-
-function getAgreementExpireDate(agreement: Agreement) {
-  const startDate = agreement.created_at ? new Date(agreement.created_at) : new Date()
-  const rentalMonths = parseRentalMonths(agreement.car?.rental_period)
-
-  if (rentalMonths) return addMonths(startDate, rentalMonths)
-  if (agreement.end_date) return new Date(agreement.end_date)
-  return null
-}
 
 export function AgreementListCard() {
   const { user } = useAuth()

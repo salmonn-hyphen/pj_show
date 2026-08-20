@@ -10,18 +10,22 @@ export type AuthUser = {
   isActive: boolean;
 };
 
-export async function getAuthUser(req: Request, res: Response): Promise<AuthUser | null> {
-  const session = await auth.api.getSession({
-    headers: fromNodeHeaders(req.headers),
-  });
+const BETTER_AUTH_SESSION_COOKIE = "better-auth.session_token";
 
-  if (session?.user) {
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { id: true, role: true, isActive: true },
+export async function getAuthUser(req: Request, res: Response): Promise<AuthUser | null> {
+  const hasBetterAuthCookie = Boolean(req.headers.cookie?.includes(BETTER_AUTH_SESSION_COOKIE));
+
+  if (hasBetterAuthCookie) {
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
     });
 
-    return user;
+    if (session?.user?.id) {
+      return prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { id: true, role: true, isActive: true },
+      });
+    }
   }
 
   const accessToken = req.cookies?.accessToken || req.cookies?.session;
@@ -31,14 +35,13 @@ export async function getAuthUser(req: Request, res: Response): Promise<AuthUser
         accessToken,
         accessTokenExpiresAt: { gt: new Date() },
       },
-      select: { userId: true },
+      select: {
+        user: { select: { id: true, role: true, isActive: true } },
+      },
     });
 
-    if (account) {
-      return prisma.user.findUnique({
-        where: { id: account.userId },
-        select: { id: true, role: true, isActive: true },
-      });
+    if (account?.user) {
+      return account.user;
     }
   }
 
@@ -50,27 +53,30 @@ export async function getAuthUser(req: Request, res: Response): Promise<AuthUser
       refreshToken: hashToken(refreshToken),
       refreshTokenExpiresAt: { gt: new Date() },
     },
-    select: { userId: true },
+    select: {
+      user: { select: { id: true, role: true, isActive: true } },
+    },
   });
 
-  if (!refreshAccount) return null;
+  if (!refreshAccount?.user) {
+    res.clearCookie("accessToken", getCookieOptions(0));
+    res.clearCookie("refreshToken", getCookieOptions(0));
+    res.clearCookie("session", getCookieOptions(0));
+    return null;
+  }
 
   const tokens = buildSessionTokens();
-  await persistTokens(refreshAccount.userId, tokens);
+  await persistTokens(refreshAccount.user.id, tokens);
   res.cookie("accessToken", tokens.accessToken, getCookieOptions(15 * 60 * 1000));
   res.cookie("refreshToken", tokens.refreshToken, getCookieOptions(30 * 24 * 60 * 60 * 1000));
   res.cookie("session", tokens.accessToken, getCookieOptions(15 * 60 * 1000));
 
-  const user = await prisma.user.findUnique({
-    where: { id: refreshAccount.userId },
-    select: { id: true, role: true, isActive: true },
-  });
-
-  return user;
+  return refreshAccount.user;
 }
 
 export async function requireUser(req: Request, res: Response, roles?: AuthUser["role"][]) {
-  const user = await getAuthUser(req, res);
+  const existing = (req as any).user as AuthUser | undefined;
+  const user = existing ?? (await getAuthUser(req, res));
 
   if (!user) {
     res.status(401).json({ error: "Authentication required" });

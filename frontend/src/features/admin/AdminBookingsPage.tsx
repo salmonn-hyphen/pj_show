@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { bookingsApi } from '@/api'
 import type { Booking } from '@/types'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 import { Car, Calendar, DollarSign, User } from 'lucide-react'
 
 export function AdminBookingsPage() {
@@ -76,7 +76,7 @@ export function AdminBookingsPage() {
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><Car className="w-5 h-5" /></div>
                           <div>
-                            <p className="font-medium">Booking #{booking.id}</p>
+                            <p className="font-medium">{bookingRef(booking.id)}</p>
                             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
                               <span className="flex items-center gap-1"><Car className="w-3 h-3" /> {booking.car?.brand || 'N/A'}</span>
                               <span className="flex items-center gap-1"><User className="w-3 h-3" /> Driver: {booking.driver?.name || 'N/A'}</span>

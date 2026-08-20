@@ -6,6 +6,7 @@ import { isApprovedOwner, serializeBooking } from "../lib/serializers.js";
 import {
   ensureCarApplicationStorage,
   serializeBookingWithFinancials,
+  serializeBookingsWithFinancials,
   withDatabaseRetry,
 } from "../lib/booking-finance.js";
 
@@ -134,7 +135,7 @@ export const listDriverBookings = async (req: Request, res: Response) => {
       orderBy: { createdAt: "desc" },
     });
 
-    const data = await Promise.all(applications.map(serializeBookingWithFinancials));
+    const data = await serializeBookingsWithFinancials(applications);
 
     return res.json({
       data,

@@ -1,21 +1,16 @@
-import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { depositsApi } from '@/api'
 import type { Deposit } from '@/types'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 import { Landmark } from 'lucide-react'
+import { useCachedFetch } from '@/hooks/useCachedFetch'
 
 export function OwnerDepositsPage() {
-  const [deposits, setDeposits] = useState<Deposit[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    depositsApi.getOwnerDeposits().then(setDeposits).catch(() => {}).finally(() => setLoading(false))
-  }, [])
+  const { data: deposits = [], isLoading: loading } = useCachedFetch<Deposit[]>('owner-deposits', () => depositsApi.getOwnerDeposits())
 
   if (loading) return <LoadingSkeleton type="list" />
   if (deposits.length === 0) return <div className="space-y-6"><h1 className="text-2xl font-bold">Deposits</h1><EmptyState title="No deposits" description="Deposits from bookings will appear here." /></div>
@@ -32,7 +27,7 @@ export function OwnerDepositsPage() {
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Landmark className="w-5 h-5" /></div>
                   <div>
                     <p className="font-medium">{formatCurrency(deposit.amount)}</p>
-                    <p className="text-xs text-muted-foreground">Booking #{deposit.booking_id} &middot; {formatDate(deposit.paid_at)}</p>
+                    <p className="text-xs text-muted-foreground">{bookingRef(deposit.booking_id)} &middot; {formatDate(deposit.paid_at)}</p>
                   </div>
                 </div>
                 <StatusBadge status={deposit.status} type="deposit" />

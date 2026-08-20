@@ -52,6 +52,11 @@ export const carsApi = {
     return res.data.data
   },
 
+  getOwnerCar: async (id: string | number): Promise<Car> => {
+    const res = await apiClient.get(`/owner/cars/${id}`)
+    return res.data.data
+  },
+
   uploadPhoto: async (carId: number, file: File, isPrimary?: boolean): Promise<CarPhoto> => {
     const formData = new FormData()
     formData.append('photo', file)

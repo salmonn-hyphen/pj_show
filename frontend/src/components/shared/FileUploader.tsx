@@ -1,5 +1,5 @@
 import { useState, useRef, type ChangeEvent } from 'react'
-import { Upload, X, FileImage } from 'lucide-react'
+import { X, ImagePlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FileUploaderProps {
@@ -56,8 +56,8 @@ export function FileUploader({
         'relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all',
         uploading && 'pointer-events-none opacity-70',
         dragOver
-          ? 'border-primary bg-primary/5 scale-[1.02]'
-          : 'border-border hover:border-primary/50 hover:bg-muted/50',
+          ? 'border-emerald-600 bg-emerald-50 scale-[1.02]'
+          : 'border-border hover:border-emerald-600/50 hover:bg-muted/50',
       )}
     >
       <input
@@ -71,7 +71,7 @@ export function FileUploader({
 
       {uploading ? (
         <div className="flex flex-col items-center gap-2">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
           <p className="text-sm text-muted-foreground">Uploading...</p>
         </div>
       ) : preview ? (
@@ -86,8 +86,8 @@ export function FileUploader({
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
-          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-            <Upload className="w-5 h-5" />
+          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+            <ImagePlus className="w-5 h-5 text-emerald-600" />
           </div>
           <p className="text-sm font-medium">{label}</p>
           <p className="text-xs">Drag & drop or click to browse</p>

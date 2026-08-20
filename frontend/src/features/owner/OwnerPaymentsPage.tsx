@@ -1,47 +1,33 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarDays, CreditCard, DollarSign, ExternalLink, Eye, ReceiptText, Search, Upload, UserRound } from 'lucide-react'
+import { CalendarDays, CreditCard, DollarSign, Eye, Loader2, ReceiptText, Search, Upload, UserRound, X } from 'lucide-react'
 import { paymentsApi } from '@/api'
 import type { Payment } from '@/types'
 import { PAYMENT_METHODS } from '@/constants'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { FileUploader } from '@/components/shared/FileUploader'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { useToast } from '@/providers'
-import { formatCurrency, formatDate } from '@/utils/format'
+import { formatCurrency, formatDate, bookingRef } from '@/utils/format'
+import { useCachedFetch, invalidateCache } from '@/hooks/useCachedFetch'
 
 export function OwnerPaymentsPage() {
   const { addToast } = useToast()
-  const [payments, setPayments] = useState<Payment[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: payments = [], isLoading: loading, refresh } = useCachedFetch<Payment[]>('owner-payments', () => paymentsApi.getOwnerPayments().then((res) => res.data))
   const [paymentMethod, setPaymentMethod] = useState('kbzpay')
   const [uploadingId, setUploadingId] = useState<string | number | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [proofPayment, setProofPayment] = useState<Payment | null>(null)
+  const [qrMethod, setQrMethod] = useState<(typeof PAYMENT_METHODS)[number] | null>(null)
 
   const availablePaymentMethods = PAYMENT_METHODS.filter((method) =>
     ['kbzpay', 'wavepay', 'ayapay'].includes(method.value),
   )
-
-  useEffect(() => {
-    loadPayments()
-  }, [])
-
-  const loadPayments = async () => {
-    try {
-      const res = await paymentsApi.getOwnerPayments()
-      setPayments(res.data)
-    } catch {
-      setPayments([])
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleUpload = async (payment: Payment, file: File) => {
     try {
@@ -51,13 +37,18 @@ export function OwnerPaymentsPage() {
       formData.append('screenshot', file)
       await paymentsApi.submitPayment(payment.booking_id, formData)
       addToast('Owner commission submitted for review', 'success')
-      loadPayments()
-    } catch (error: any) {
-      addToast(error?.response?.data?.error || 'Payment upload failed', 'error')
+      invalidateCache('owner-payments')
+      invalidateCache('owner-bookings')
+      refresh()
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { error?: string } } })?.response?.data?.error
+      addToast(message || 'Payment upload failed', 'error')
     } finally {
       setUploadingId(null)
     }
   }
+
+  const selectedMethod = availablePaymentMethods.find((method) => method.value === paymentMethod)
 
   const filteredPayments = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
@@ -113,69 +104,85 @@ export function OwnerPaymentsPage() {
 
                 return (
                   <motion.div key={payment.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                    <Card>
-                      <CardContent className="space-y-4 p-4">
-                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Card className="border-slate-200 bg-white">
+                      <CardContent className="space-y-3 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700">
                               <DollarSign className="h-5 w-5" />
                             </div>
-                            <div className="min-w-0 space-y-2">
-                              <div>
-                                <p className="text-sm font-semibold">Booking #{payment.booking_id}</p>
-                                <p className="text-xs text-muted-foreground">{paymentPurpose}</p>
-                              </div>
-                              <p className="text-xl font-semibold text-foreground">{formatCurrency(payment.amount)}</p>
-                              <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
-                                <p><span className="text-foreground">From:</span> {payment.transfer_from_name || 'Unknown'}</p>
-                                <p><span className="text-foreground">To:</span> {payment.transfer_to_name || 'Taxi Meik Swe Agency'}</p>
-                                {payment.driver_name && <p><span className="text-foreground">Driver:</span> {payment.driver_name}</p>}
-                                <p><span className="text-foreground">Method:</span> {payment.method || 'Not submitted'}</p>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                {commissionRate}% commission
-                                {payment.commission_amount ? ` (${formatCurrency(payment.commission_amount)})` : ''}
-                                {' '}· {payment.paid_at ? `Paid ${formatDate(payment.paid_at)}` : 'Awaiting proof'}
-                              </p>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-slate-950">{bookingRef(payment.booking_id)}</p>
+                              <p className="text-xs text-muted-foreground">{paymentPurpose}</p>
                             </div>
                           </div>
-
-                            <div className="flex shrink-0 items-center gap-2 self-start">
-                              {payment.screenshot_url && (
+                          <div className="flex shrink-0 items-center gap-2">
+                            {payment.screenshot_url && (
                               <Button size="sm" variant="outline" onClick={() => setProofPayment(payment)}>
-                                  <Eye className="h-4 w-4" />
-                                  View proof
+                                <Eye className="h-4 w-4" />
+                                View proof
                               </Button>
                             )}
                             <StatusBadge status={payment.status} type="payment" />
                           </div>
                         </div>
 
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                          <p className="text-lg font-semibold text-slate-950">{formatCurrency(payment.amount)}</p>
+                          <p className="text-xs text-slate-500">
+                            <span className="font-medium text-slate-700">From:</span> {payment.transfer_from_name || 'Unknown'}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            <span className="font-medium text-slate-700">To:</span> {payment.transfer_to_name || 'Taxi Meik Swe Agency'}
+                          </p>
+                          {payment.driver_name && (
+                            <p className="text-xs text-slate-500">
+                              <span className="font-medium text-slate-700">Driver:</span> {payment.driver_name}
+                            </p>
+                          )}
+                          <p className="text-xs text-slate-500">
+                            <span className="font-medium text-slate-700">Method:</span> {payment.method || 'Not submitted'}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {commissionRate}% commission
+                            {payment.commission_amount ? ` (${formatCurrency(payment.commission_amount)})` : ''}
+                            {' '}· {payment.paid_at ? `Paid ${formatDate(payment.paid_at)}` : 'Awaiting proof'}
+                          </p>
+                        </div>
+
                         {canUpload && (
-                          <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
-                            <div className="flex items-center gap-2 text-sm font-medium">
-                              <Upload className="h-4 w-4 text-primary" />
-                              Submit commission proof
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {availablePaymentMethods.map((method) => (
-                                <Button
-                                  key={method.value}
-                                  type="button"
-                                  size="sm"
-                                  variant={paymentMethod === method.value ? 'default' : 'outline'}
-                                  onClick={() => setPaymentMethod(method.value)}
-                                >
-                                  <span className="mr-1">{method.icon}</span>
-                                  {method.label}
-                                </Button>
-                              ))}
-                            </div>
-                            <FileUploader
-                              label={uploadingId === payment.id ? 'Uploading...' : 'Upload owner commission proof'}
-                              uploading={uploadingId === payment.id}
-                              onUpload={(file) => handleUpload(payment, file)}
-                            />
+                          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                              <SelectTrigger className="h-9 w-44 text-xs">
+                                <SelectValue placeholder="Payment type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availablePaymentMethods.map((method) => (
+                                  <SelectItem key={method.value} value={method.value}>
+                                    <span className="mr-1">{method.icon}</span>
+                                    {method.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {selectedMethod?.qr_code && (
+                              <button
+                                type="button"
+                                onClick={() => setQrMethod(selectedMethod)}
+                                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 transition-colors hover:bg-slate-100"
+                                title={`Scan ${selectedMethod.label} QR code`}
+                              >
+                                <img
+                                  src={selectedMethod.qr_code}
+                                  alt={`${selectedMethod.label} QR code`}
+                                  className="h-12 w-12 rounded-md object-contain"
+                                />
+                                <span className="pr-1 text-xs font-medium text-slate-600">
+                                  Scan to pay via {selectedMethod.label}
+                                </span>
+                              </button>
+                            )}
+                            <UploadProofButton uploading={uploadingId === payment.id} onUpload={(file) => handleUpload(payment, file)} />
                           </div>
                         )}
                       </CardContent>
@@ -189,7 +196,68 @@ export function OwnerPaymentsPage() {
       )}
 
       <PaymentProofDialog payment={proofPayment} onOpenChange={(open) => !open && setProofPayment(null)} />
+      <PaymentQrDialog method={qrMethod} onOpenChange={(open) => !open && setQrMethod(null)} />
     </div>
+  )
+}
+
+function PaymentQrDialog({
+  method,
+  onOpenChange,
+}: {
+  method: (typeof PAYMENT_METHODS)[number] | null
+  onOpenChange: (open: boolean) => void
+}) {
+  return (
+    <Dialog open={!!method} onOpenChange={onOpenChange}>
+      <DialogContent hideCloseButton className="w-[calc(100vw-2rem)] border-slate-200 bg-white sm:max-w-sm">
+        <DialogClose className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80">
+          <X className="h-4 w-4" />
+        </DialogClose>
+        <DialogHeader>
+          <DialogTitle className="text-center text-slate-950">{method?.label} QR Code</DialogTitle>
+          <DialogDescription className="text-center">
+            Scan this QR code to pay the owner commission
+          </DialogDescription>
+        </DialogHeader>
+        {method?.qr_code && (
+          <div className="mx-auto">
+            <img
+              src={method.qr_code}
+              alt={`${method.label} QR code`}
+              className="h-56 w-56 rounded-xl border border-slate-200 bg-white object-contain p-2"
+            />
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function UploadProofButton({ uploading, onUpload }: { uploading: boolean; onUpload: (file: File) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const { addToast } = useToast()
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        addToast('File size must be less than 5MB', 'error')
+      } else {
+        onUpload(file)
+      }
+      event.target.value = ''
+    }
+  }
+
+  return (
+    <>
+      <input ref={inputRef} type="file" accept="image/*" onChange={handleChange} className="hidden" />
+      <Button size="sm" variant="success" disabled={uploading} onClick={() => inputRef.current?.click()}>
+        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        {uploading ? 'Uploading...' : 'Upload proof'}
+      </Button>
+    </>
   )
 }
 
@@ -204,17 +272,20 @@ function PaymentProofDialog({
 
   return (
     <Dialog open={!!payment} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] w-[calc(100vw-2rem)] overflow-hidden border-slate-200 bg-white p-0 shadow-2xl shadow-slate-950/20 sm:max-w-5xl">
+      <DialogContent hideCloseButton className="max-h-[92vh] w-[calc(100vw-2rem)] overflow-hidden border-slate-200 bg-white p-0 shadow-2xl shadow-slate-950/20 sm:max-w-5xl">
+        <DialogClose className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80">
+          <X className="h-4 w-4" />
+        </DialogClose>
         <DialogHeader className="border-b border-slate-200 bg-slate-50 px-5 py-4 pr-12">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
                 <ReceiptText className="h-5 w-5" />
               </div>
               <div>
                 <DialogTitle className="text-xl text-slate-950">Payment Proof</DialogTitle>
                 <DialogDescription className="mt-1 text-slate-500">
-                  {payment ? `Booking #${payment.booking_id}` : 'Payment proof'}
+                  {payment ? `${bookingRef(payment.booking_id)}` : 'Payment proof'}
                 </DialogDescription>
               </div>
             </div>
@@ -224,17 +295,17 @@ function PaymentProofDialog({
 
         {payment && (
           <div className="grid max-h-[calc(92vh-88px)] overflow-y-auto bg-white lg:grid-cols-[minmax(0,1fr)_340px]">
-            <div className="flex min-h-[360px] items-center justify-center bg-slate-950 p-4 sm:min-h-[520px]">
+            <div className="flex min-h-[360px] items-center justify-center bg-slate-50 p-4 sm:min-h-[520px]">
               {payment.screenshot_url ? (
-                <div className="flex h-full w-full items-center justify-center rounded-lg border border-white/10 bg-slate-900 p-2 shadow-inner">
+                <div className="flex h-full w-full items-center justify-center rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                   <img
                     src={payment.screenshot_url}
                     alt={`Payment proof for booking ${payment.booking_id}`}
-                    className="max-h-[68vh] w-full rounded-md object-contain shadow-xl shadow-slate-950/40"
+                    className="max-h-[68vh] w-full rounded-lg object-contain"
                   />
                 </div>
               ) : (
-                <div className="flex flex-col items-center gap-2 text-slate-300">
+                <div className="flex flex-col items-center gap-2 text-slate-400">
                   <ReceiptText className="h-8 w-8" />
                   <p className="text-sm">No proof image available.</p>
                 </div>
@@ -242,10 +313,10 @@ function PaymentProofDialog({
             </div>
 
             <div className="space-y-5 border-t border-slate-200 bg-slate-50/70 p-5 lg:border-l lg:border-t-0">
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                <p className="text-xs font-medium uppercase text-emerald-700">Amount submitted</p>
-                <p className="mt-1 text-3xl font-semibold text-emerald-950">{formatCurrency(payment.amount)}</p>
-                <p className="mt-2 text-xs text-emerald-700">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-medium uppercase text-slate-500">Amount submitted</p>
+                <p className="mt-1 text-3xl font-semibold text-slate-950">{formatCurrency(payment.amount)}</p>
+                <p className="mt-2 text-xs text-slate-600">
                   {commissionRate}% commission
                   {payment.commission_amount ? ` · ${formatCurrency(payment.commission_amount)}` : ''}
                 </p>
@@ -257,15 +328,6 @@ function PaymentProofDialog({
                 <PaymentProofDetail icon={<CreditCard className="h-4 w-4" />} label="Method" value={payment.method || 'Not submitted'} />
                 <PaymentProofDetail icon={<CalendarDays className="h-4 w-4" />} label="Paid" value={payment.paid_at ? formatDate(payment.paid_at) : 'Awaiting proof'} />
               </div>
-
-              {payment.screenshot_url && (
-                <Button className="w-full bg-slate-950 text-white hover:bg-slate-800" asChild>
-                  <a href={payment.screenshot_url} target="_blank" rel="noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                    Open full size
-                  </a>
-                </Button>
-              )}
             </div>
           </div>
         )}

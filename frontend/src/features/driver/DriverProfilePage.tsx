@@ -10,7 +10,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { profileSchema, type ProfileFormData } from '@/utils/validation';
 import { useAuth, useToast } from '@/providers';
 import { usersApi } from '@/api';
-import { AgreementListCard } from '@/components/shared/AgreementListCard';
 import { getInitials } from '@/utils/format';
 import { VERIFICATION_LABELS, VERIFICATION_COLORS } from '@/constants';
 import { 
@@ -190,9 +189,6 @@ export function DriverProfilePage() {
               </div>
             </CardContent>
           </Card>
-          <div className="mt-6">
-            <AgreementListCard />
-          </div>
         </motion.div>
 
         {/* Right Columns: Edit Form */}

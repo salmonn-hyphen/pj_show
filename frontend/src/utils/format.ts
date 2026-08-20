@@ -48,6 +48,23 @@ export function getInitials(name: string): string {
     .slice(0, 2)
 }
 
+function refCode(id: string | number, prefix: string): string {
+  const str = String(id)
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0
+  }
+  return `${prefix}-${String(100000 + (hash % 900000))}`
+}
+
+export function bookingRef(id: string | number): string {
+  return refCode(id, 'BK')
+}
+
+export function driverRef(id: string | number): string {
+  return refCode(id, 'DR')
+}
+
 export function truncate(str: string, length: number): string {
   if (str.length <= length) return str
   return str.slice(0, length) + '...'

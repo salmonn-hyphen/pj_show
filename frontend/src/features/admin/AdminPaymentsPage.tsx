@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { paymentsApi } from '@/api'
 import { useToast } from '@/providers'
 import type { Payment } from '@/types'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 import { CheckCircle, XCircle, DollarSign } from 'lucide-react'
 
 export function AdminPaymentsPage() {
@@ -98,7 +98,7 @@ export function AdminPaymentsPage() {
                           <div>
                             <p className="font-medium">{formatCurrency(payment.amount)}</p>
                             <p className="text-sm text-muted-foreground capitalize">
-                              {payment.method} &middot; {payment.payer_role || 'DRIVER'} &middot; Booking #{payment.booking_id} &middot; {formatDate(payment.paid_at)}
+                              {payment.method} &middot; {payment.payer_role || 'DRIVER'} &middot; {bookingRef(payment.booking_id)} &middot; {formatDate(payment.paid_at)}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               From {payment.transfer_from_name || 'Unknown'} to {payment.transfer_to_name || 'Taxi Meik Swe Agency'}

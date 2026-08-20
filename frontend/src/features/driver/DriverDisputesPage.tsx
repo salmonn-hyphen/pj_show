@@ -7,7 +7,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { disputesApi } from '@/api'
 import type { Dispute } from '@/types'
-import { formatDate } from '@/utils/format'
+import { formatDate, bookingRef } from '@/utils/format'
 import { AlertTriangle, Plus } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -37,7 +37,7 @@ export function DriverDisputesPage() {
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0"><AlertTriangle className="w-5 h-5" /></div>
                       <div>
-                        <p className="font-medium">Booking #{dispute.booking_id}</p>
+                        <p className="font-medium">{bookingRef(dispute.booking_id)}</p>
                         <p className="text-sm text-muted-foreground mt-1">{dispute.reason}</p>
                         <p className="text-xs text-muted-foreground mt-1">{formatDate(dispute.created_at)}</p>
                       </div>

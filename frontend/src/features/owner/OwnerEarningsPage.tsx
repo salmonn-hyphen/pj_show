@@ -1,19 +1,13 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { DollarSign, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatsCard } from '@/components/shared/StatsCard'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ownersApi } from './ownerApi'
 import { formatCurrency } from '@/utils/format'
+import { useCachedFetch } from '@/hooks/useCachedFetch'
 
 export function OwnerEarningsPage() {
-  const [data, setData] = useState<{ total: number; monthly: { month: string; amount: number }[] } | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    ownersApi.getEarnings().then(setData).catch(() => {}).finally(() => setLoading(false))
-  }, [])
+  const { data, isLoading: loading } = useCachedFetch<{ total: number; monthly: { month: string; amount: number }[] }>('owner-earnings', () => ownersApi.getEarnings())
 
   if (loading) return <LoadingSkeleton type="detail" />
 

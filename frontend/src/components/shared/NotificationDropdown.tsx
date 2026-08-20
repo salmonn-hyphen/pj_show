@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Bell } from 'lucide-react'
+import { Bell, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { notificationsApi } from '@/api'
 import type { Notification } from '@/types'
@@ -16,12 +16,6 @@ export function NotificationDropdown() {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    loadNotifications()
-    const interval = setInterval(loadNotifications, 30000)
-    return () => clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false)
@@ -31,16 +25,27 @@ export function NotificationDropdown() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const loadNotifications = async () => {
-    try {
-      const data = await notificationsApi.getAll()
-      setNotifications(data)
-      const count = data.filter((n) => !n.is_read).length
-      setUnreadCount(count)
-    } catch {
-      // ignore
+  useEffect(() => {
+    let cancelled = false
+
+    const run = async () => {
+      try {
+        const data = await notificationsApi.getAll()
+        if (cancelled) return
+        setNotifications(data)
+        setUnreadCount(data.filter((n) => !n.is_read).length)
+      } catch {
+        // ignore
+      }
     }
-  }
+
+    run()
+    const interval = setInterval(run, 30000)
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [])
 
   const handleMarkAsRead = async (id: string | number) => {
     try {
@@ -95,6 +100,19 @@ export function NotificationDropdown() {
     }
   }
 
+  const handleDelete = async (id: string | number) => {
+    try {
+      await notificationsApi.remove(id)
+      setNotifications((prev) => {
+        const next = prev.filter((n) => n.id !== id)
+        setUnreadCount(next.filter((n) => !n.is_read).length)
+        return next
+      })
+    } catch {
+      // ignore
+    }
+  }
+
   return (
     <div ref={ref} className="relative">
       <Button
@@ -127,18 +145,40 @@ export function NotificationDropdown() {
                 No notifications
               </div>
             ) : (
-              notifications.slice(0, 20).map((notif) => (
-                <button
+              notifications.slice(0, 3).map((notif) => (
+                <div
                   key={notif.id}
-                  onClick={() => handleNotificationClick(notif)}
-                  className={`w-full border-b border-slate-800 p-3 text-left transition-colors last:border-0 hover:bg-slate-900 ${!notif.is_read ? 'bg-slate-900/80' : ''}`}
+                  className={`group relative w-full border-b border-slate-800 text-left transition-colors last:border-0 ${!notif.is_read ? 'bg-slate-900/80' : ''}`}
                 >
-                  <p className="text-sm font-medium text-slate-100">{notif.title}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">{notif.message}</p>
-                  <p className="mt-1 text-xs text-slate-500">{timeAgo(notif.created_at)}</p>
-                </button>
+                  <button
+                    onClick={() => handleNotificationClick(notif)}
+                    className="w-full p-3 pr-10 text-left transition-colors hover:bg-slate-900"
+                  >
+                    <p className="text-sm font-medium text-slate-100">{notif.title}</p>
+                    <p className="mt-0.5 text-xs text-slate-400">{notif.message}</p>
+                    <p className="mt-1 text-xs text-slate-500">{timeAgo(notif.created_at)}</p>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(notif.id)}
+                    aria-label="Delete notification"
+                    className="absolute right-2 top-2 rounded-md p-1 text-slate-500 transition-colors hover:bg-red-500/20 hover:text-red-400"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               ))
             )}
+          </div>
+          <div className="border-t border-slate-800 p-2">
+            <button
+              onClick={() => {
+                setOpen(false)
+                navigate(`/${user?.role?.toLowerCase() || 'admin'}/notifications`)
+              }}
+              className="w-full rounded-lg py-1.5 text-center text-xs text-slate-300 transition-colors hover:bg-slate-900 hover:text-white"
+            >
+              View all
+            </button>
           </div>
         </div>
       )}

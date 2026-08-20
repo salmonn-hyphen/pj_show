@@ -49,6 +49,7 @@ import { DriverDisputesPage } from '@/features/driver/DriverDisputesPage'
 import { DriverReviewsPage } from '@/features/driver/DriverReviewsPage'
 import { DriverProfilePage } from '@/features/driver/DriverProfilePage'
 import { AgreementFormPage } from '@/features/shared/AgreementFormPage'
+import { AgreementsPage } from '@/features/shared/AgreementsPage'
 
 // Admin pages
 import { AdminDashboardPage } from '@/features/admin/AdminDashboardPage'
@@ -110,6 +111,7 @@ export const router = createBrowserRouter([
       { path: 'notifications', element: <AdminNotificationsPage /> },
       { path: 'documents', element: <OwnerDocumentsPage /> },
       { path: 'profile', element: <OwnerProfilePage /> },
+      { path: 'agreements', element: <AgreementsPage /> },
       { path: 'agreements/:id', element: <AgreementFormPage /> },
     ],
   },
@@ -134,6 +136,7 @@ export const router = createBrowserRouter([
       { path: 'reviews', element: <DriverReviewsPage /> },
       { path: 'notifications', element: <AdminNotificationsPage /> },
       { path: 'profile', element: <DriverProfilePage /> },
+      { path: 'agreements', element: <AgreementsPage /> },
       { path: 'agreements/:id', element: <AgreementFormPage /> },
     ],
   },
@@ -157,6 +160,7 @@ export const router = createBrowserRouter([
       { path: 'deposits', element: <AdminDepositsPage /> },
       { path: 'audit-log', element: <AdminAuditLogPage /> },
       { path: 'notifications', element: <AdminNotificationsPage /> },
+      { path: 'agreements', element: <AgreementsPage /> },
       { path: 'agreements/:id', element: <AgreementFormPage /> },
     ],
   },

@@ -15,6 +15,10 @@ export const notificationsApi = {
     await apiClient.post('/notifications/read-all')
   },
 
+  remove: async (id: string | number): Promise<void> => {
+    await apiClient.delete(`/notifications/${id}`)
+  },
+
   getUnreadCount: async (): Promise<number> => {
     const res = await apiClient.get('/notifications/unread-count')
     return res.data.data

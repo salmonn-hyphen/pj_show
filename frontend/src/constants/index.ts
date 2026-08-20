@@ -1,5 +1,6 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
-export const APP_NAME = 'Taxi-MeikSwe'
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+export const APP_NAME = "Taxi-MeikSwe";
 
 export const VERIFICATION_LABELS: Record<string, string> = {
   unverified: "Unverified",
@@ -63,12 +64,17 @@ export const BOOKING_COLORS: Record<string, string> = {
 };
 
 export const PAYMENT_METHODS = [
-  { value: "kbzpay", label: "KBZPay", icon: "💳" },
-  { value: "wavepay", label: "WavePay", icon: "📱" },
-  { value: "bank_transfer", label: "Bank Transfer", icon: "🏦" },
-  { value: "cash", label: "Cash", icon: "💵" },
-  { value: "ayapay", label: "AyaPay", icon: "📲" },
-  { value: "cbpay", label: "CBPay", icon: "📱" },
+  { value: "KBZPay", label: "KBZPay", icon: "💳", qr_code: "/qr/kbzpay.png" },
+  {
+    value: "WavePay",
+    label: "WavePay",
+    icon: "📱",
+    qr_code: "/qr/wavepay.png",
+  },
+  { value: "bank_transfer", label: "Bank Transfer", icon: "🏦", qr_code: null },
+  { value: "cash", label: "Cash", icon: "💵", qr_code: null },
+  { value: "AYAPay", label: "AyaPay", icon: "📲", qr_code: "/qr/ayapay.png" },
+  { value: "cbpay", label: "CBPay", icon: "📱", qr_code: null },
 ];
 
 export const FUEL_OPTIONS = [

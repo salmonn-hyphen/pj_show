@@ -62,17 +62,27 @@ export const ownersApi = {
   },
 
   getEarnings: async (): Promise<{ total: number; monthly: { month: string; amount: number }[] }> => {
-    await new Promise(resolve => setTimeout(resolve, 600))
+    const res = await apiClient.get<PaginatedResponse<Booking>>('/owner/bookings')
+    const bookings = res.data.data || []
+    const monthLabels = getMonthLabels()
+    const monthlyTotals = new Map(monthLabels.map((month) => [month, 0]))
+    let total = 0
+
+    bookings.forEach((booking) => {
+      if (booking.status === 'requested' || booking.status === 'cancelled') return
+
+      const amount = calculateOwnerPayout(Number(booking.total_amount || 0))
+      total += amount
+
+      const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(booking.created_at))
+      if (monthlyTotals.has(month)) {
+        monthlyTotals.set(month, (monthlyTotals.get(month) || 0) + amount)
+      }
+    })
+
     return {
-      total: 1250000,
-      monthly: [
-        { month: 'Jan', amount: 350000 },
-        { month: 'Feb', amount: 420000 },
-        { month: 'Mar', amount: 310000 },
-        { month: 'Apr', amount: 580000 },
-        { month: 'May', amount: 480000 },
-        { month: 'Jun', amount: 620000 },
-      ]
+      total,
+      monthly: monthLabels.map((month) => ({ month, amount: monthlyTotals.get(month) || 0 })),
     }
   },
 }

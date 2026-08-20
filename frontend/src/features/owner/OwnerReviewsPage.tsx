@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { reviewsApi } from '@/api'
 import type { Review } from '@/types'
@@ -7,14 +6,10 @@ import { Star } from 'lucide-react'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate } from '@/utils/format'
+import { useCachedFetch } from '@/hooks/useCachedFetch'
 
 export function OwnerReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    reviewsApi.getOwnerReviews().then(setReviews).catch(() => {}).finally(() => setLoading(false))
-  }, [])
+  const { data: reviews = [], isLoading: loading } = useCachedFetch<Review[]>('owner-reviews', () => reviewsApi.getOwnerReviews())
 
   if (loading) return <LoadingSkeleton type="list" />
   if (reviews.length === 0) return <div className="space-y-6"><h1 className="text-2xl font-bold">Reviews</h1><EmptyState title="No reviews yet" /></div>

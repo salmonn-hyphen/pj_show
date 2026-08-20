@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileText, CalendarCheck, Car,
   Users, Shield, Bell, ScrollText, DollarSign, Landmark,
-  AlertTriangle, Star, Menu, X, ChevronDown, Gauge,
+  AlertTriangle, Menu, X, ChevronDown, Gauge,
   PlusCircle, Lock, WandSparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -36,6 +36,7 @@ const ownerNav = (kycPassed: boolean): NavItem[] => [
   { label: 'Bookings', icon: <CalendarCheck className="w-4 h-4" />, path: '/owner/bookings', locked: !kycPassed },
   { label: 'Payments', icon: <DollarSign className="w-4 h-4" />, path: '/owner/payments', locked: !kycPassed },
   { label: 'Notifications', icon: <Bell className="w-4 h-4" />, path: '/owner/notifications' },
+  { label: 'Agreements', icon: <FileText className="w-4 h-4" />, path: '/owner/agreements' },
   { label: 'KYC', icon: <Shield className="w-4 h-4" />, path: '/owner/documents' },
   { label: 'Profile', icon: <Users className="w-4 h-4" />, path: '/owner/profile' },
 ]
@@ -46,6 +47,7 @@ const driverNav = (kycPassed: boolean): NavItem[] => [
   { label: 'My Booking', icon: <CalendarCheck className="w-4 h-4" />, path: '/driver/bookings', locked: !kycPassed },
   { label: 'Payments', icon: <DollarSign className="w-4 h-4" />, path: '/driver/payments', locked: !kycPassed },
   { label: 'Notifications', icon: <Bell className="w-4 h-4" />, path: '/driver/notifications' },
+  { label: 'Agreements', icon: <FileText className="w-4 h-4" />, path: '/driver/agreements' },
   { label: 'KYC', icon: <Shield className="w-4 h-4" />, path: '/driver/documents' },
   { label: 'Profile', icon: <Users className="w-4 h-4" />, path: '/driver/profile' },
 ]
@@ -61,11 +63,11 @@ const adminNav: NavItem[] = [
   { label: 'Users', icon: <Users className="w-4 h-4" />, path: '/admin/users' },
   { label: 'Deposits', icon: <Landmark className="w-4 h-4" />, path: '/admin/deposits' },
   { label: 'Notifications', icon: <Bell className="w-4 h-4" />, path: '/admin/notifications' },
+  { label: 'Agreements', icon: <FileText className="w-4 h-4" />, path: '/admin/agreements' },
   { label: 'Audit Log', icon: <ScrollText className="w-4 h-4" />, path: '/admin/audit-log' },
 ]
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
   const { pathname } = useLocation()
@@ -125,30 +127,17 @@ export function Sidebar() {
       <aside
         className={cn(
           'fixed inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-white/10 bg-slate-950 text-white shadow-[24px_0_80px_rgba(2,6,23,0.35)] transition-all duration-300',
-          collapsed ? 'w-16' : 'w-64',
+          'w-64',
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
         )}
       >
-        <div className={cn(
-          'flex items-center h-16 px-4 border-b border-white/10',
-          !collapsed && 'justify-between gap-3',
-          collapsed && 'justify-center px-2',
-        )}>
-          {!collapsed && (
-            <Link to="/" className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 shadow-lg shadow-amber-500/10">
-                <img src={Logo} alt="" className="h-8 w-auto object-contain" />
-              </span>
-              <span className="truncate text-sm font-semibold text-white">{APP_NAME}</span>
-            </Link>
-          )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] text-white/55 transition hover:bg-white/10 hover:text-white lg:flex"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <ChevronDown className={cn('w-4 h-4 transition-transform', collapsed ? 'rotate-90' : '-rotate-90')} />
-          </button>
+        <div className="flex items-center h-16 px-4 border-b border-white/10 justify-between gap-3">
+          <Link to={navItems[0]?.path || '/'} className="flex min-w-0 flex-1 items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 shadow-lg shadow-amber-500/10">
+              <img src={Logo} alt="" className="h-8 w-auto object-contain" />
+            </span>
+            <span className="truncate text-sm font-semibold text-white">{APP_NAME}</span>
+          </Link>
         </div>
 
         <ScrollArea className="relative flex-1 py-3">
@@ -171,7 +160,6 @@ export function Sidebar() {
                             ? 'bg-amber-400/15 text-amber-200 font-medium shadow-inner shadow-amber-500/10 ring-1 ring-amber-300/20'
                             : 'text-white/65 hover:bg-white/10 hover:text-white',
                           item.locked && 'opacity-45 hover:bg-transparent hover:text-white/65',
-                          collapsed && 'justify-center px-2',
                         )}
                     >
                       <span
@@ -184,15 +172,11 @@ export function Sidebar() {
                       >
                         {item.icon}
                       </span>
-                      {!collapsed && (
-                        <>
-                          <span className="truncate">{item.label}</span>
-                          {item.locked && <Lock className="ml-auto h-3 w-3 shrink-0 text-white/50" />}
-                        </>
-                      )}
+                      <span className="truncate">{item.label}</span>
+                      {item.locked && <Lock className="ml-auto h-3 w-3 shrink-0 text-white/50" />}
                     </NavLink>
 
-                    {hasChildren && !collapsed && (
+                    {hasChildren && (
                       <button
                         type="button"
                         onClick={() => toggleGroup(item.path)}
@@ -204,7 +188,7 @@ export function Sidebar() {
                     )}
                   </div>
 
-                  {hasChildren && groupOpen && !collapsed && (
+                  {hasChildren && groupOpen && (
                     <div className="ml-10 space-y-1 border-l border-white/10 pl-3">
                       {item.children?.map((child) => {
                         const childActive = isChildPathActive(child.path) && !item.locked

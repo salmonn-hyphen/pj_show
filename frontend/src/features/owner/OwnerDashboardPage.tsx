@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import {
   Car, CalendarCheck, DollarSign, Clock,
   ShieldAlert, ShieldEllipsis, XCircle,
@@ -16,9 +15,9 @@ import { ownersApi } from './ownerApi'
 import { usersApi } from '@/api'
 import { useAuth } from '@/providers'
 import { isKycApproved, normalizeVerificationStatus } from '@/constants'
-import type { OwnerDashboardStats } from '@/types'
+import type { OwnerDashboardStats, User } from '@/types'
 import { formatCurrency, formatDate } from '@/utils/format'
-import { AIDriverSearchInterface } from './AIDriverSearchInterface'
+import { useCachedFetch } from '@/hooks/useCachedFetch'
 
 function KYCAlert({ status }: { status: string }) {
   const normalizedStatus = normalizeVerificationStatus(status)
@@ -69,15 +68,9 @@ function KYCAlert({ status }: { status: string }) {
 
 export function OwnerDashboardPage() {
   const { user, updateUser } = useAuth()
-  const [stats, setStats] = useState<OwnerDashboardStats | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { data: stats = null, isLoading: loading } = useCachedFetch<OwnerDashboardStats>('owner-dashboard', () => ownersApi.getDashboard())
 
-  useEffect(() => {
-    loadStats()
-    syncOwnerKycStatus()
-  }, [])
-
-  const syncOwnerKycStatus = async () => {
+  const syncOwnerKycStatus = useCallback(async () => {
     if (!user) return
 
     try {
@@ -85,27 +78,18 @@ export function OwnerDashboardPage() {
       const nextStatus = normalizeVerificationStatus(profile.admin_approval_status)
 
       if (nextStatus !== user.verification_status) {
-        updateUser({ ...user, verification_status: nextStatus as any })
+        updateUser({ ...user, verification_status: nextStatus as User['verification_status'] })
       }
     } catch {
       // Keep the cached user if the profile endpoint is unavailable.
     }
-  }
+  }, [updateUser, user])
 
-  const loadStats = async () => {
-    try {
-      const data = await ownersApi.getDashboard()
-      setStats(data)
-    } catch {
-      // handle
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    syncOwnerKycStatus()
+  }, [syncOwnerKycStatus])
 
   if (loading) return <LoadingSkeleton type="detail" count={3} />
-
-  const monthlyRevenue = stats?.monthly_earnings ?? []
 
   return (
     <div className="space-y-6">

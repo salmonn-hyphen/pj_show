@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 
 export function DriverPaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([])
@@ -84,7 +84,7 @@ export function DriverPaymentsPage() {
                             </div>
                             <div className="min-w-0 space-y-2">
                               <div>
-                                <p className="text-sm font-semibold">Booking #{payment.booking_id}</p>
+                                <p className="text-sm font-semibold">{bookingRef(payment.booking_id)}</p>
                                 <p className="text-xs text-muted-foreground">{paymentPurpose}</p>
                               </div>
                               <p className="text-xl font-semibold text-foreground">{formatCurrency(payment.amount)}</p>
@@ -142,7 +142,7 @@ function PaymentProofDialog({
             <div>
               <DialogTitle>Payment Proof</DialogTitle>
               <DialogDescription>
-                {payment ? `Booking #${payment.booking_id}` : 'Payment proof'}
+                {payment ? `${bookingRef(payment.booking_id)}` : 'Payment proof'}
               </DialogDescription>
             </div>
             {payment && <StatusBadge status={payment.status} type="payment" />}

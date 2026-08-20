@@ -113,7 +113,16 @@ export async function ensureCarApplicationStorage() {
   `);
 }
 
+let bookingPaymentStorageReady: Promise<void> | null = null;
+
 export async function ensureBookingPaymentStorage() {
+  if (!bookingPaymentStorageReady) {
+    bookingPaymentStorageReady = createBookingPaymentStorage();
+  }
+  return bookingPaymentStorageReady;
+}
+
+async function createBookingPaymentStorage() {
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS "booking_payments" (
       "id" UUID PRIMARY KEY,
@@ -158,20 +167,58 @@ export async function ensureBookingPaymentStorage() {
   `);
 }
 
+export async function serializeBookingsWithFinancials(applications: any[]) {
+  if (applications.length === 0) return [];
+
+  const ids = applications.map((application) => application.id);
+
+  const paymentsPromise = prisma.$queryRaw<Array<any>>`
+    SELECT
+      p.*,
+      payer.full_name AS transfer_from_name,
+      'Taxi Meik Swe Agency' AS transfer_to_name,
+      driver.full_name AS driver_name,
+      owner.full_name AS owner_name
+    FROM booking_payments p
+    INNER JOIN car_applications a ON a.id = p.booking_id
+    LEFT JOIN users payer ON payer.id = p.user_id
+    LEFT JOIN users driver ON driver.id = a.driver_id
+    LEFT JOIN users owner ON owner.id = a.owner_id
+    WHERE p.booking_id = ANY(${ids}::uuid[])
+  `.catch((error) => {
+    if (isMissingOptionalFinanceTableError(error)) return [] as any[];
+    throw error;
+  });
+
+  const depositsPromise = prisma.$queryRaw<Array<any>>`
+    SELECT * FROM booking_deposits WHERE booking_id = ANY(${ids}::uuid[])
+  `.catch((error) => {
+    if (isMissingOptionalFinanceTableError(error)) return [] as any[];
+    throw error;
+  });
+
+  const [payments, deposits] = await Promise.all([paymentsPromise, depositsPromise]);
+
+  return applications.map((application) => {
+    const payment = payments.find((p) => p.booking_id === application.id && p.payer_role === "DRIVER") || null;
+    const ownerPayment = payments.find((p) => p.booking_id === application.id && p.payer_role === "OWNER") || null;
+    const deposit = deposits.find((d) => d.booking_id === application.id) || null;
+    const booking = serializeBooking({ ...application, payment }) as any;
+    return {
+      ...booking,
+      payment: serializePayment(payment),
+      owner_payment: serializePayment(ownerPayment),
+      deposit: serializeDeposit(deposit),
+      payment_status: payment?.status || "incomplete",
+      owner_payment_status: ownerPayment?.status || "incomplete",
+      deposit_status: deposit?.status || "incomplete",
+    };
+  });
+}
+
 export async function serializeBookingWithFinancials(application: any) {
-  const payment = await getBookingPayment(application.id, "DRIVER");
-  const ownerPayment = await getBookingPayment(application.id, "OWNER");
-  const deposit = await getBookingDeposit(application.id);
-  const booking = serializeBooking({ ...application, payment }) as any;
-  return {
-    ...booking,
-    payment: serializePayment(payment),
-    owner_payment: serializePayment(ownerPayment),
-    deposit: serializeDeposit(deposit),
-    payment_status: payment?.status || "incomplete",
-    owner_payment_status: ownerPayment?.status || "incomplete",
-    deposit_status: deposit?.status || "incomplete",
-  };
+  const [result] = await serializeBookingsWithFinancials([application]);
+  return result;
 }
 
 export async function getBookingPayment(applicationId: string, payerRole: PaymentPayerRole = "DRIVER") {

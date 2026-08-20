@@ -13,7 +13,7 @@ export function Navbar() {
   const { user, logout } = useAuth()
 
   return (
-    <header className="sticky top-0 z-30 h-14 border-b border-slate-800 bg-slate-950 text-slate-100 shadow-[0_8px_32px_rgba(2,6,23,0.18)]">
+    <header className="sticky top-0 z-30 h-16 border-b border-slate-800 bg-slate-950 text-slate-100 shadow-[0_8px_32px_rgba(2,6,23,0.18)]">
       <div className="flex items-center justify-end h-full px-4 lg:px-6 gap-4">
         <NotificationDropdown />
 

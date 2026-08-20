@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { depositsApi } from '@/api'
 import { useToast } from '@/providers'
 import type { Deposit } from '@/types'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 import { Landmark, Snowflake, CheckCircle, MinusCircle } from 'lucide-react'
 
 export function AdminDepositsPage() {
@@ -80,7 +80,7 @@ export function AdminDepositsPage() {
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"><Landmark className="w-5 h-5" /></div>
                       <div>
                         <p className="font-medium">{formatCurrency(deposit.amount)}</p>
-                        <p className="text-xs text-muted-foreground">Booking #{deposit.booking_id} &middot; {formatDate(deposit.paid_at)}</p>
+                        <p className="text-xs text-muted-foreground">{bookingRef(deposit.booking_id)} &middot; {formatDate(deposit.paid_at)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

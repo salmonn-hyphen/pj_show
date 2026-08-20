@@ -23,7 +23,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
             {variant === 'destructive' && (
@@ -32,13 +32,13 @@ export function ConfirmDialog({
               </div>
             )}
             <div>
-              <DialogTitle>{title}</DialogTitle>
-              <DialogDescription>{description}</DialogDescription>
+              <DialogTitle className="text-lg text-slate-950">{title}</DialogTitle>
+              <DialogDescription className="mt-1 text-base text-slate-600">{description}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+        <DialogFooter className="flex-row items-center justify-end gap-2">
+          <Button variant="outline" className="border-slate-300 bg-slate-100 text-slate-900 hover:bg-slate-200" onClick={() => onOpenChange(false)} disabled={loading}>
             {cancelLabel}
           </Button>
           <Button

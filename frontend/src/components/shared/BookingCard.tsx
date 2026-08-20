@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from './StatusBadge'
 import type { Booking } from '@/types'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 
 interface BookingCardProps {
   booking: Booking
@@ -28,7 +28,7 @@ export function BookingCard({ booking, onView, actions }: BookingCardProps) {
               </div>
               <div>
                 <p className="font-semibold text-slate-950">
-                  {booking.car ? `${booking.car.brand} ${booking.car.model}` : `Booking #${booking.id}`}
+                  {booking.car ? `${booking.car.brand} ${booking.car.model}` : bookingRef(booking.id)}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 mt-1">
                   <span className="flex items-center gap-1">

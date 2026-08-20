@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { disputesApi } from '@/api'
 import { useToast } from '@/providers'
 import type { Dispute } from '@/types'
-import { formatDate, formatCurrency } from '@/utils/format'
+import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 import { AlertTriangle, Scale } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -73,7 +73,7 @@ export function AdminDisputesPage() {
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0"><AlertTriangle className="w-5 h-5" /></div>
                       <div>
-                        <p className="font-medium">Dispute on Booking #{dispute.booking_id}</p>
+                        <p className="font-medium">Dispute on {bookingRef(dispute.booking_id)}</p>
                         <p className="text-sm text-muted-foreground mt-1">{dispute.reason}</p>
                         <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
                           <span>Raised by: {dispute.raiser?.name || 'N/A'}</span>
