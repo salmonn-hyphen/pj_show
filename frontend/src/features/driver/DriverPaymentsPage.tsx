@@ -166,7 +166,7 @@ function PaymentProofDialog({
             <div className="space-y-4 border-t p-5 lg:border-l lg:border-t-0">
               <div>
                 <p className="text-xs text-muted-foreground">Amount</p>
-                <p className="text-2xl font-semibold">{formatCurrency(payment.amount)}</p>
+                <p className="text-2xl font-semibold text-black">{formatCurrency(payment.amount)}</p>
               </div>
 
               <div className="grid gap-3 text-sm">
@@ -177,7 +177,7 @@ function PaymentProofDialog({
               </div>
 
               {payment.screenshot_url && (
-                <Button variant="outline" className="w-full" asChild>
+                <Button className="w-full" asChild>
                   <a href={payment.screenshot_url} target="_blank" rel="noreferrer">
                     <ExternalLink className="h-4 w-4" />
                     Open full size
@@ -196,7 +196,7 @@ function PaymentProofDetail({ label, value }: { label: string; value: string }) 
   return (
     <div className="rounded-lg border bg-muted/20 p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 font-medium">{value}</p>
+      <p className="mt-1 font-medium text-black">{value}</p>
     </div>
   )
 }

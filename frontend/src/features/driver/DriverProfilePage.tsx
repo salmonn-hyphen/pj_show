@@ -117,8 +117,8 @@ export function DriverProfilePage() {
     <div className="max-w-5xl mx-auto space-y-8 px-4 py-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">Profile Settings</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your driver account details, security credentials, and view verification status.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-black">Profile Settings</h1>
+          <p className="text-muted-foreground dark:text-muted-foreground mt-1">Manage your driver account details, security credentials, and view verification status.</p>
         </div>
       </div>
 
@@ -129,12 +129,12 @@ export function DriverProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           className="lg:col-span-1"
         >
-          <Card className="overflow-hidden border border-slate-100 dark:border-slate-800 shadow-md">
-            <div className="h-24 bg-gradient-to-r from-sky-400 to-indigo-500" />
+          <Card className="overflow-hidden border border-slate-100 shadow-md">
+            <div className="h-24" />
             <CardContent className="relative pt-0 pb-6 text-center">
               <div className="flex justify-center -mt-12 mb-4">
                 <div className="relative">
-                  <Avatar className="w-24 h-24 border-4 border-white dark:border-slate-950 shadow-xl">
+                  <Avatar className="w-24 h-24 border-4 border-white shadow-xl">
                     <AvatarImage src={user?.profile_photo_url || ''} />
                     <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-slate-800 to-slate-900 text-white">
                       {user ? getInitials(user.name) : '?'}
@@ -163,12 +163,12 @@ export function DriverProfilePage() {
                 </div>
               </div>
 
-              <h2 className="text-xl font-bold text-slate-950 dark:text-white">{user?.name}</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{user?.email}</p>
+              <h2 className="text-xl font-bold text-slate-950">{user?.name}</h2>
+              <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1">{user?.email}</p>
               {photoUploading && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Uploading photo...</p>}
               
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 dark:bg-sky-950/50 dark:text-sky-400">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-sky-100 text-black dark:bg-sky dark:text-black">
                   <Shield className="w-3.5 h-3.5" />
                   Taxi Driver
                 </span>
@@ -178,11 +178,11 @@ export function DriverProfilePage() {
               </div>
 
               <div className="border-t border-slate-100 dark:border-slate-800 mt-6 pt-6 text-left space-y-4">
-                <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground dark:text-muted-foreground">
                   <Calendar className="w-4 h-4 text-slate-400" />
                   <span>Joined {formattedDate}</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground dark:text-muted-foreground">
                   <Phone className="w-4 h-4 text-slate-400" />
                   <span>{user?.phone || 'No phone registered'}</span>
                 </div>
@@ -200,7 +200,7 @@ export function DriverProfilePage() {
         >
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Form Section 1: Personal Info */}
-            <Card className="border border-slate-100 dark:border-slate-800 shadow-md">
+            <Card className="border shadow-md">
               <CardHeader>
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <UserIcon className="w-5 h-5 text-sky-500" />
@@ -213,11 +213,11 @@ export function DriverProfilePage() {
                   <div className="space-y-2">
                     <Label htmlFor="profile-name">Full Name</Label>
                     <div className="relative">
-                      <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-500" />
                       <Input 
                         id="profile-name"
                         placeholder="Full name" 
-                        className="pl-9"
+                        className="pl-9 "
                         {...register('name')} 
                       />
                     </div>
@@ -230,13 +230,13 @@ export function DriverProfilePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="profile-phone" className="text-sky-800 dark:text-sky-300 font-bold">Phone Number</Label>
+                    <Label htmlFor="profile-phone" className="">Phone Number</Label>
                     <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-600 dark:text-sky-400" />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-500" />
                       <Input 
                         id="profile-phone"
                         placeholder="Phone number" 
-                        className="pl-9 border-2 border-sky-500 dark:border-sky-400 bg-sky-50/70 dark:bg-sky-950/40 text-slate-900 dark:text-white font-medium focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-1"
+                        className="pl-9"
                         {...register('phone')} 
                       />
                     </div>
@@ -252,13 +252,13 @@ export function DriverProfilePage() {
                 <div className="space-y-2">
                   <Label htmlFor="profile-email">Email Address</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-500" />
                     <Input 
                       id="profile-email"
                       type="email" 
                       value={user?.email || ''} 
                       disabled 
-                      className="pl-9 bg-slate-50 dark:bg-slate-900 cursor-not-allowed border-dashed"
+                      className="pl-9 cursor-not-allowed border-dashed"
                     />
                   </div>
                   <p className="text-xs text-slate-400">Email addresses are unique account identifiers and cannot be updated.</p>
@@ -267,7 +267,7 @@ export function DriverProfilePage() {
             </Card>
 
             {/* Form Section 2: Security */}
-            <Card className="border border-slate-100 dark:border-slate-800 shadow-md">
+            <Card className="border shadow-md">
               <CardHeader>
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <Lock className="w-5 h-5 text-sky-500" />

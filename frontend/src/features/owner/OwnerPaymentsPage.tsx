@@ -19,14 +19,14 @@ import { useCachedFetch, invalidateCache } from '@/hooks/useCachedFetch'
 export function OwnerPaymentsPage() {
   const { addToast } = useToast()
   const { data: payments = [], isLoading: loading, refresh } = useCachedFetch<Payment[]>('owner-payments', () => paymentsApi.getOwnerPayments().then((res) => res.data))
-  const [paymentMethod, setPaymentMethod] = useState('kbzpay')
+  const [paymentMethod, setPaymentMethod] = useState('KBZPay')
   const [uploadingId, setUploadingId] = useState<string | number | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [proofPayment, setProofPayment] = useState<Payment | null>(null)
   const [qrMethod, setQrMethod] = useState<(typeof PAYMENT_METHODS)[number] | null>(null)
 
   const availablePaymentMethods = PAYMENT_METHODS.filter((method) =>
-    ['kbzpay', 'wavepay', 'ayapay'].includes(method.value),
+    ['KBZPay', 'WavePay', 'AYAPay'].includes(method.value),
   )
 
   const handleUpload = async (payment: Payment, file: File) => {
@@ -159,7 +159,7 @@ export function OwnerPaymentsPage() {
                               <SelectContent>
                                 {availablePaymentMethods.map((method) => (
                                   <SelectItem key={method.value} value={method.value}>
-                                    <span className="mr-1">{method.icon}</span>
+                                    {/* <span className="mr-1">{method.icon}</span> */}
                                     {method.label}
                                   </SelectItem>
                                 ))}

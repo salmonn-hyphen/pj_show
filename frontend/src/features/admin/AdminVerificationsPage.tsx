@@ -528,7 +528,7 @@ export function AdminVerificationsPage({ type }: Props) {
 
               <DialogFooter className="gap-2 pt-2">
                 {isReadOnly ? (
-                  <Button variant="outline" onClick={() => setSelectedDriver(null)}>
+                  <Button variant="outline" className="text-black" onClick={() => setSelectedDriver(null)}>
                     Close
                   </Button>
                 ) : (

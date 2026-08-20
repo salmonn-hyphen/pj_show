@@ -123,7 +123,7 @@ export function AdminDashboardPage() {
         </Card>
       </div>
 
-      <Card className="border-slate-200">
+      {/* <Card className="border-slate-200">
         <CardContent className="p-4 sm:p-6">
           <h2 className="font-semibold text-sm mb-4 text-slate-950">Admin Work Queue</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -148,7 +148,7 @@ export function AdminDashboardPage() {
           ))}
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   )
 }

@@ -85,7 +85,7 @@ export function AdminBookingsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                           <div className="flex flex-col items-end gap-1">
                             <StatusBadge status={booking.status} type="booking" />
                             <span className="text-[11px] text-muted-foreground">
