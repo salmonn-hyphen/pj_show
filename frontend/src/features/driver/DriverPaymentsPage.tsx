@@ -148,7 +148,14 @@ export function DriverPaymentsPage() {
                                 <p className="text-sm font-semibold">{bookingRef(payment.booking_id)}</p>
                                 <p className="text-xs text-muted-foreground">{paymentPurpose}</p>
                               </div>
-                              <p className="text-xl font-semibold text-foreground">{formatCurrency(payment.amount)}</p>
+                              <p className="text-xl font-semibold text-foreground">
+                                {formatCurrency(payment.amount)}
+                                {payment.commission_amount ? (
+                                  <span className="text-xl font-semibold text-foreground ml-2">
+                                    +  {formatCurrency(payment.commission_amount)} commission
+                                  </span>
+                                ) : null}
+                              </p>
                               <div className="grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
                                 <p><span className="text-foreground">From:</span> {payment.transfer_from_name || 'Unknown'}</p>
                                 <p><span className="text-foreground">To:</span> {payment.transfer_to_name || 'Taxi Meik Swe Agency'}</p>
@@ -157,7 +164,6 @@ export function DriverPaymentsPage() {
                               </div>
                               <p className="text-xs text-muted-foreground">
                                 {commissionRate}% commission
-                                {payment.commission_amount ? ` (${formatCurrency(payment.commission_amount)})` : ''}
                                 {' '}· {payment.paid_at ? `Paid ${formatDate(payment.paid_at)}` : 'Awaiting proof'}
                               </p>
                             </div>

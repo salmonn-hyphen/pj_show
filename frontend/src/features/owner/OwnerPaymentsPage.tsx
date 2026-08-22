@@ -148,7 +148,9 @@ export function OwnerPaymentsPage() {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                          <p className="text-lg font-semibold text-slate-950">{formatCurrency(payment.amount)}</p>
+                          <p className="text-lg font-semibold text-slate-950">
+                            {formatCurrency(payment.amount)}
+                          </p>
                           <p className="text-xs text-slate-500">
                             <span className="font-medium text-slate-700">From:</span> {payment.transfer_from_name || 'Unknown'}
                           </p>
@@ -165,7 +167,6 @@ export function OwnerPaymentsPage() {
                           </p>
                           <p className="text-xs text-slate-500">
                             {commissionRate}% commission
-                            {payment.commission_amount ? ` (${formatCurrency(payment.commission_amount)})` : ''}
                             {' '}· {payment.paid_at ? `Paid ${formatDate(payment.paid_at)}` : 'Awaiting proof'}
                           </p>
                         </div>
@@ -367,10 +368,11 @@ function PaymentProofDialog({
             <div className="space-y-5 border-t border-slate-200 bg-slate-50/70 p-5 lg:border-l lg:border-t-0">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-medium uppercase text-slate-500">Amount submitted</p>
-                <p className="mt-1 text-3xl font-semibold text-slate-950">{formatCurrency(payment.amount)}</p>
+                <p className="mt-1 text-3xl font-semibold text-slate-950">
+                  {formatCurrency(payment.amount)}
+                </p>
                 <p className="mt-2 text-xs text-slate-600">
                   {commissionRate}% commission
-                  {payment.commission_amount ? ` · ${formatCurrency(payment.commission_amount)}` : ''}
                 </p>
               </div>
 

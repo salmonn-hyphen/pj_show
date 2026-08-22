@@ -11,11 +11,11 @@ import {
 import { adminApi } from '@/api'
 import type { OwnerDocument } from '@/types'
 import { useToast } from '@/providers'
-import { formatDate } from '@/utils/format'
+import { formatDate, formatCurrency } from '@/utils/format'
 import {
   CheckCircle2, XCircle, Eye, User, Phone, Mail, Calendar,
   ShieldCheck, ShieldAlert, Clock, Loader2, ZoomIn, X,
-  ChevronRight, History, ClipboardList,
+  ChevronRight, History, ClipboardList, Car,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -182,6 +182,9 @@ export function AdminVerificationsPage({ type }: Props) {
   // Other types state
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Car detail view state
+  const [selectedCar, setSelectedCar] = useState<any | null>(null)
 
   // Owner review modal state
   const [selectedOwner, setSelectedOwner] = useState<PendingOwner | null>(null)
@@ -476,6 +479,9 @@ export function AdminVerificationsPage({ type }: Props) {
                     <p className="text-sm text-muted-foreground">{item.email || item.city}</p>
                   </div>
                   <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setSelectedCar(item)} className="gap-1.5">
+                      <Eye className="w-3.5 h-3.5" /> View
+                    </Button>
                     <Button size="sm" variant="success" onClick={() => handleReviewOther(item, 'verified')}>
                       <CheckCircle2 className="w-4 h-4 mr-1" /> Approve
                     </Button>
@@ -488,6 +494,127 @@ export function AdminVerificationsPage({ type }: Props) {
             ))}
           </div>
         )}
+
+        {/* ─── Car Detail Dialog ──────────────────────────────────────── */}
+        <Dialog open={!!selectedCar} onOpenChange={(o) => { if (!o) setSelectedCar(null) }}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            {selectedCar && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Car className="w-5 h-5 text-primary" />
+                    {selectedCar.brand} {selectedCar.model}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Review the car details and documents before approving or rejecting.
+                  </DialogDescription>
+                </DialogHeader>
+
+                {/* Car Info */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-50 border border-slate-100 text-sm">
+                  <div><span className="text-muted-foreground">Brand:</span> <span className="font-medium text-black">{selectedCar.brand}</span></div>
+                  <div><span className="text-muted-foreground">Model:</span> <span className="font-medium text-black">{selectedCar.model}</span></div>
+                  {selectedCar.year && <div><span className="text-muted-foreground">Year:</span> <span className="font-medium text-black">{selectedCar.year}</span></div>}
+                  {selectedCar.color && <div><span className="text-muted-foreground">Color:</span> <span className="font-medium text-black">{selectedCar.color}</span></div>}
+                  <div><span className="text-muted-foreground">License:</span> <span className="font-medium text-black">{selectedCar.license_number || selectedCar.license_plate || '-'}</span></div>
+                  <div><span className="text-muted-foreground">Fuel:</span> <span className="font-medium capitalize text-black">{selectedCar.fuel_type || '-'}</span></div>
+                  <div><span className="text-muted-foreground">Rental Price:</span> <span className="font-medium text-black">{formatCurrency(selectedCar.daily_rate || selectedCar.rental_price || 0)}</span></div>
+                  <div><span className="text-muted-foreground">Deposit:</span> <span className="font-medium text-black">{formatCurrency(selectedCar.deposit_amount || 0)}</span></div>
+                  {selectedCar.rental_period && <div><span className="text-muted-foreground">Rental Period:</span> <span className="font-medium text-black">{selectedCar.rental_period}</span></div>}
+                  {selectedCar.rental_payment_type && <div><span className="text-muted-foreground">Payment Type:</span> <span className="font-medium text-black">{selectedCar.rental_payment_type}</span></div>}
+                  {selectedCar.rental_type && <div><span className="text-muted-foreground">Rental Type:</span> <span className="font-medium text-black">{selectedCar.rental_type === 'DRIVER_HOME' ? 'Driver Home' : 'Owner Home'}</span></div>}
+                  <div><span className="text-muted-foreground">Status:</span> <span className="font-medium capitalize text-black">{selectedCar.availability_status || selectedCar.status || '-'}</span></div>
+                  <div><span className="text-muted-foreground">Created:</span> <span className="font-medium text-black">{formatDate(selectedCar.created_at)}</span></div>
+                </div>
+
+                {/* Owner Info */}
+                {selectedCar.owner && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Owner Information</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-slate-50 border border-slate-100 text-sm">
+                      <div className="flex items-center gap-2"><User className="w-4 h-4 text-slate-400" /><span className="font-medium text-black">{selectedCar.owner.name}</span></div>
+                      {selectedCar.owner.email && <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-slate-400" /><span className="text-black">{selectedCar.owner.email}</span></div>}
+                      {selectedCar.owner.phone && <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-slate-400" /><span className="text-black">{selectedCar.owner.phone}</span></div>}
+                      <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-slate-400" /><span className="capitalize text-black">{selectedCar.owner.verification_status || 'pending'}</span></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Car Images */}
+                {selectedCar.images && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Car Documents / Images</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { label: 'Front', url: selectedCar.images.front_image },
+                        { label: 'Back', url: selectedCar.images.back_image },
+                        { label: 'Left', url: selectedCar.images.left_image },
+                        { label: 'Right', url: selectedCar.images.right_image },
+                      ].map(({ label, url }) => (
+                        <div key={label} className="space-y-1.5">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
+                          {url ? (
+                            <div
+                              className="relative rounded-xl overflow-hidden border border-slate-200 aspect-video bg-slate-100 group cursor-zoom-in"
+                              onClick={() => setLightboxUrl(url)}
+                            >
+                              <img src={url} alt={`${selectedCar.brand} ${selectedCar.model} - ${label}`} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <ZoomIn className="w-6 h-6 text-white" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="rounded-xl border-2 border-dashed border-slate-200 aspect-video flex items-center justify-center">
+                              <p className="text-xs text-muted-foreground">Not uploaded</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Owner Book */}
+                {/* {selectedCar.owner_book && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Owner Book / Vehicle Document</p>
+                    <div
+                      className="relative rounded-xl overflow-hidden border border-slate-200 max-w-xs bg-slate-100 group cursor-zoom-in"
+                      onClick={() => setLightboxUrl(selectedCar.owner_book)}
+                    >
+                      <img src={selectedCar.owner_book} alt="Owner Book" className="w-full h-auto object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <ZoomIn className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                  </div>
+                )} */}
+
+                <DialogFooter className="gap-2 pt-2">
+                  <Button onClick={() => setSelectedCar(null)}>Close</Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => { setSelectedCar(null); handleReviewOther(selectedCar, 'rejected') }}
+                    className="gap-2"
+                  >
+                    <XCircle className="w-4 h-4" /> Reject
+                  </Button>
+                  <Button
+                    onClick={() => { setSelectedCar(null); handleReviewOther(selectedCar, 'verified') }}
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> Approve
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Lightbox */}
+        <AnimatePresence>
+          {lightboxUrl && <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
+        </AnimatePresence>
       </div>
     )
   }

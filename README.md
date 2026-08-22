@@ -32,7 +32,7 @@ Drivers browse and rent vehicles; owners list cars and review applications; admi
 | Database | PostgreSQL (local dev via `PrismaPg`; Neon supported) |
 | Auth | Better Auth (`better-auth`) + cookie sessions |
 | Uploads | Multer (KYC docs, car photos, payment screenshots, profile photos) |
-| AI | Groq SDK (owner -> driver matchmaking) |
+| AI | Groq SDK (owner -> driver matchmaking, optional) |
 | Security | Helmet, CORS, express-rate-limit |
 | Misc | nodemailer, `ws` |
 
@@ -40,13 +40,15 @@ Drivers browse and rent vehicles; owners list cars and review applications; admi
 | Layer | Technology |
 | :--- | :--- |
 | Framework | React 19 + TypeScript |
-| Build | Vite 8 + SWC plugin |
-| Styling | Tailwind CSS v4, Radix UI primitives, `lucide-react` icons |
+| Build | Vite 8 + Oxc plugin (`@vitejs/plugin-react` v6) |
+| Styling | Tailwind CSS v4, Radix UI primitives, `lucide-react` icons, `clsx`, `tailwind-merge`, `class-variance-authority` |
 | Routing | React Router 7 |
 | Data | Axios (`@/api/*` modules) + Better Auth client |
 | Forms | React Hook Form + Zod |
 | Charts | Recharts |
 | Animation | framer-motion |
+| PDF/Export | `jspdf`, `modern-screenshot` |
+| Utilities | `date-fns` |
 
 ---
 
@@ -57,10 +59,10 @@ Drivers browse and rent vehicles; owners list cars and review applications; admi
 |  React SPA (Vite)  |  HTTP   |  Express API (port 3000) |
 |  frontend/         | ------> |  backend/src/index.ts    |
 |  Port 5173         |  JSON   |                          |
-+--------------------+         |  routes/ -> controllers/ |
-                               |  lib/     -> Prisma + auth|
-                               |  service/ -> business     |
-                               |  respositry/ -> queries   |
++--------------------+         |  src/routes/ -> src/controllers/ |
+                               |  src/lib/     -> Prisma + auth   |
+                               |  service/     -> business logic  |
+                               |  respositry/  -> data access     |
                                +-----------+--------------+
                                            | Prisma
                                            v
@@ -70,9 +72,10 @@ Drivers browse and rent vehicles; owners list cars and review applications; admi
 ```
 
 - **Frontend** is a role-based SPA: public pages, auth pages, and three dashboards (owner / driver / admin) guarded by route guards.
-- **Backend** is a modular Express app. `backend/src/index.ts` is a thin entrypoint that mounts routers; business logic lives in `controllers`, `service`, and `respositry` layers; shared helpers in `lib/`.
+- **Backend** is a modular Express app. `backend/src/index.ts` is a thin entrypoint that mounts routers; business logic lives in `controllers` and `service` layers; data access in `respositry/`; shared helpers in `lib/`. Note: `service/` and `respositry/` live at `backend/` root (not inside `src/`).
 - **Auth** is cookie-based via Better Auth; custom OTP endpoints handle phone-verified registration.
 - **Uploads** are served statically from `backend/uploads/*` (`/uploads/...`).
+- **Runtime tables**: `booking_payments` and `booking_deposits` are created dynamically via raw SQL in `lib/booking-finance.ts`, not through Prisma schema/migrations.
 
 ---
 
@@ -91,21 +94,21 @@ pj_show/
 |   |   +-- controllers/           # Request handlers
 |   |   +-- lib/                   # auth, serializers, uploads, finance helpers
 |   |   +-- middleware/            # auth guard, zod validation
-|   |   +-- service/               # business logic (auth, admin, AI matching, car)
-|   |   +-- respositry/            # raw SQL / Prisma data access
 |   |   +-- generated/prisma/      # generated Prisma client
+|   +-- service/                   # business logic (auth, admin, car, driver)
+|   +-- respositry/                # data access layer (owner, driver, admin)
 |   +-- scripts/show-otp.ts        # print OTP codes (dev SMS simulation)
 |   +-- uploads/                   # KYC, car, payment, profile uploads
 +-- frontend/
 |   +-- src/
-|   |   +-- routes/                # router + ProtectedRoute / GuestRoute
+|   |   +-- routes/                # router + ProtectedRoute / GuestRoute / PublicRoute
 |   |   +-- layouts/               # PublicLayout, AuthLayout, DashboardLayout
 |   |   +-- features/              # pages grouped by role (public/auth/owner/driver/admin/shared)
-|   |   +-- api/                   # typed API client modules
-|   |   +-- components/            # layout, shared, ui (Radix)
+|   |   +-- api/                   # typed API client modules (13 modules)
+|   |   +-- components/            # layout, shared (15 components), ui (Radix)
 |   |   +-- providers/             # AuthProvider, ToastProvider
 |   |   +-- hooks/ lib/ utils/ types/ constants/ mock-data/
-|   |   +-- App.tsx, main.tsx
+|   |   +-- main.tsx               # app entrypoint (RouterProvider)
 +-- api_and_state_design.md        # DB + API + state-flow design doc
 +-- current_state.md               # live implementation progress
 +-- coding-agent-memory.md         # refactoring log (backend extraction)
@@ -467,15 +470,21 @@ Core tables (PostgreSQL, Prisma-managed):
 | `driver_licenses` | License records | `licenseNumber`, `licenseClass`, `expiryDate`, `status` |
 | `cars` | Listed vehicles | `brand`, `model`, `rentalPrice`, `depositAmount`, `availabilityStatus`, `adminApprovalStatus` |
 | `car_images` | Car photos | front/back/left/right images (1:1 with car) |
-| `car_applications` | Driver booking requests | `ownerApprovalStatus`, `adminApprovalStatus`, agreement timestamps |
+| `car_applications` | Driver booking requests | `ownerApprovalStatus`, `adminApprovalStatus`, `status` (BookingStatus), `agreementStatus`, `commissionPaymentStatus`, agreement timestamps |
 | `car_rentals` | Active/completed rentals | `rentalStartDate`, `rentalEndDate`, `status` (ACTIVE/COMPLETED/CANCELLED) |
-| `payments` | Rental fee receipts | `amount`, `receiptPhotoUrl`, `status` (PENDING/COMPLETED/FAILED/REFUNDED) |
-| `deposits` | Deposit receipts | `amount`, `status` (frozen/released/deducted flows) |
 | `reviews` | Ratings | `direction` (OWNER_TO_DRIVER / DRIVER_TO_OWNER), `rating` |
 | `notifications` | In-app alerts | `receiverId`, `title`, `message`, `isRead` |
 | `otp_codes` | OTP flow | `phone`, `code`, `purpose`, `expiresAt`, `consumedAt` |
+| `trusted_devices` | Device fingerprinting | linked to user sessions |
 | `sessions` / `accounts` | Better Auth | cookie sessions, provider accounts |
 | `verifications` | Better Auth | verification tokens |
+
+Runtime-managed tables (created via raw SQL in `lib/booking-finance.ts`, not in Prisma schema):
+
+| Table | Purpose | Key Fields |
+| :--- | :--- | :--- |
+| `booking_payments` | Rental fee receipts | `amount`, `receiptPhotoUrl`, `status` (PaymentStatus) |
+| `booking_deposits` | Deposit receipts | `amount`, `status` (freeze/release/deduct flows) |
 
 Full schema: `backend/prisma/schema.prisma` (also mirrored in `api_and_state_design.md`).
 
@@ -495,7 +504,6 @@ Full schema: `backend/prisma/schema.prisma` (also mirrored in `api_and_state_des
 +-- /                  Owner dashboard (stats, earnings chart, recent bookings)
 +-- /cars  /cars/new  /cars/:id/edit
 +-- /bookings          incoming applications
-+-- /ai-matchmaker     AI driver search
 +-- /earnings  /payments  /deposits  /reviews  /disputes
 +-- /documents  /profile  /notifications
 +-- /agreements  /agreements/:id
@@ -519,7 +527,7 @@ Full schema: `backend/prisma/schema.prisma` (also mirrored in `api_and_state_des
 Route guards:
 - `ProtectedRoute` — requires auth + role match (RBAC).
 - `GuestRoute` — redirects authenticated users to their role dashboard.
-- `PublicRoute` — public pages.
+- `PublicRoute` — exists but not used in router; `GuestRoute` is used for public auth-required pages instead.
 
 ---
 
@@ -529,18 +537,17 @@ Route guards:
 | Command | Description |
 | :--- | :--- |
 | `npm run dev` | Start API with hot reload (nodemon + tsx) |
-| `npm start` | Start API |
+| `npm start` | Start API (tsx) |
 | `npm run seed` | Seed demo data |
 | `npm run otp` | Print current OTP codes (SMS simulation) |
 | `npx prisma migrate dev` | Apply schema migrations |
 | `npx prisma studio` | Browse database |
-| `npx tsc --noEmit` | Typecheck |
 
 ### Frontend (`cd frontend`)
 | Command | Description |
 | :--- | :--- |
 | `npm run dev` | Start Vite dev server |
-| `npm run build` | Typecheck + production build |
+| `npm run build` | Typecheck + production build (`tsc -b && vite build`) |
 | `npm run lint` | ESLint |
 | `npm run preview` | Preview production build |
 | `npm run otp` | Print current OTP codes (runs backend script) |
@@ -553,12 +560,15 @@ Live progress is tracked in `current_state.md`. Summary:
 
 **Done**
 - Better Auth integration + OTP registration flow (SMS simulated in terminal, codes via `npm run otp`).
-- Prisma `PrismaPg` local PostgreSQL setup with migrations and seed.
+- Prisma `PrismaPg` local PostgreSQL setup with migrations, seed, and workflow status refactor.
 - Full route/controller architecture extracted (`routes/`, `controllers/`, `service/`, `respositry/`, `lib/`).
-- React Router with `ProtectedRoute` (RBAC) + `GuestRoute`, role mapping fixed.
-- Owner and Driver dashboards (UI + mocked data), registration page connected to OTP flow.
+- React Router with `ProtectedRoute` (RBAC) + `GuestRoute`, role mapping.
+- Owner, Driver, and Admin dashboards with UI and API integration.
+- Booking workflow: application → owner/admin approval → e-agreement → payments/deposits.
+- Runtime-managed `booking_payments` and `booking_deposits` tables via `booking-finance.ts`.
+- 13 frontend API modules, 15 shared UI components, 3 Radix-based layouts.
 
 **In progress / planned**
 1. Twilio SMS — awaiting credentials to replace simulated OTP printing.
-2. Backend queries for Owner/Driver dashboard APIs to replace frontend mocks.
-3. Admin dashboard workflows — verifications, payments, deposits, disputes.
+2. Public `/cars` browse page — route currently commented out; needs activation.
+3. Owner AI Matchmaker — backend exists but frontend route/page not yet implemented.
