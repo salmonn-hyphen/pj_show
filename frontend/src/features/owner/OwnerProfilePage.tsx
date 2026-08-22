@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PasswordChangeCard } from '@/components/shared/PasswordChangeCard'
 import { profileSchema, type ProfileFormData } from '@/utils/validation'
 import { useAuth, useToast } from '@/providers'
 import { usersApi } from '@/api'
@@ -42,8 +43,11 @@ export function OwnerProfilePage() {
       })
       updateUser(updated)
       addToast('Profile updated', 'success')
-    } catch (err: any) {
-      addToast(err.response?.data?.error || err.response?.data?.message || 'Update failed', 'error')
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error ||
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      addToast(message || 'Update failed', 'error')
     } finally {
       setLoading(false)
     }
@@ -62,8 +66,11 @@ export function OwnerProfilePage() {
       const updated = await usersApi.uploadProfilePhoto(file)
       updateUser(updated)
       addToast('Profile photo updated', 'success')
-    } catch (err: any) {
-      addToast(err.response?.data?.error || err.response?.data?.message || 'Photo upload failed', 'error')
+    } catch (err) {
+      const message =
+        (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error ||
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      addToast(message || 'Photo upload failed', 'error')
     } finally {
       setPhotoUploading(false)
     }
@@ -165,6 +172,8 @@ export function OwnerProfilePage() {
           </CardContent>
         </Card>
       </motion.div>
+
+      <PasswordChangeCard />
     </div>
   )
 }

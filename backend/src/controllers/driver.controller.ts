@@ -18,10 +18,15 @@ export async function updateProfile(req: Request, res: Response) {
       return res.status(400).json({ error: "Name is required" });
     }
 
+    // Strict security: password changes must go through /user/change-password,
+    // which verifies the current password before applying the new one.
+    if (password !== undefined && String(password).trim() !== "") {
+      return res.status(400).json({ error: "Password changes must use the change-password endpoint" });
+    }
+
     const updatedUser = await updateProfileService(user.id, {
       name,
       phone,
-      password,
       address,
       bio,
     });

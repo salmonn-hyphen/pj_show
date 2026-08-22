@@ -249,9 +249,16 @@ export async function loginWithCredentials(params: { email?: string; phone?: str
   const email = params.email || (params.phone ? (await getEmailByPhone(params.phone)).email : "");
   if (!email) throw new AuthServiceError("Email or phone number is required", 400);
 
-  const response = await auth.api.signInEmail({
-    body: { email, password: params.password },
-  });
+  let response: Awaited<ReturnType<typeof auth.api.signInEmail>>;
+  try {
+    response = await auth.api.signInEmail({
+      body: { email, password: params.password },
+    });
+  } catch (error) {
+    // better-auth throws APIError on invalid credentials; surface it as a proper 401
+    if (error instanceof AuthServiceError) throw error;
+    throw new AuthServiceError("Invalid email or password", 401);
+  }
 
   if (!response?.user) throw new AuthServiceError("Invalid credentials", 401);
 

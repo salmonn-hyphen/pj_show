@@ -6,14 +6,23 @@ import type { Notification } from '@/types'
 import { timeAgo } from '@/utils/format'
 import { useAuth } from '@/providers'
 import { useNavigate } from 'react-router-dom'
+import { useCachedFetch, updateCache } from '@/hooks/useCachedFetch'
+
+const REFRESH_INTERVAL_MS = 30_000
 
 export function NotificationDropdown() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
+
+  // Shares the same cache key as the Notifications page so both stay in sync.
+  const { data: notifications = [], refresh } = useCachedFetch<Notification[]>(
+    'notifications',
+    () => notificationsApi.getAll(),
+    { ttlMs: REFRESH_INTERVAL_MS },
+  )
+  const unreadCount = notifications.filter((n) => !n.is_read).length
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -26,36 +35,21 @@ export function NotificationDropdown() {
   }, [])
 
   useEffect(() => {
-    let cancelled = false
-
-    const run = async () => {
-      try {
-        const data = await notificationsApi.getAll()
-        if (cancelled) return
-        setNotifications(data)
-        setUnreadCount(data.filter((n) => !n.is_read).length)
-      } catch {
-        // ignore
-      }
-    }
-
-    run()
-    const interval = setInterval(run, 30000)
-    return () => {
-      cancelled = true
-      clearInterval(interval)
-    }
-  }, [])
+    const interval = setInterval(refresh, REFRESH_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [refresh])
 
   const handleMarkAsRead = async (id: string | number) => {
+    updateCache<Notification[]>('notifications', (items) =>
+      items.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+    )
+
     try {
       await notificationsApi.markAsRead(id)
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
-      )
-      setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch {
-      // ignore
+      updateCache<Notification[]>('notifications', (items) =>
+        items.map((n) => (n.id === id ? { ...n, is_read: false } : n)),
+      )
     }
   }
 
@@ -91,25 +85,24 @@ export function NotificationDropdown() {
   }
 
   const handleMarkAllRead = async () => {
+    updateCache<Notification[]>('notifications', (items) =>
+      items.map((n) => ({ ...n, is_read: true })),
+    )
+
     try {
       await notificationsApi.markAllAsRead()
-      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
-      setUnreadCount(0)
     } catch {
-      // ignore
+      refresh()
     }
   }
 
   const handleDelete = async (id: string | number) => {
+    updateCache<Notification[]>('notifications', (items) => items.filter((n) => n.id !== id))
+
     try {
       await notificationsApi.remove(id)
-      setNotifications((prev) => {
-        const next = prev.filter((n) => n.id !== id)
-        setUnreadCount(next.filter((n) => !n.is_read).length)
-        return next
-      })
     } catch {
-      // ignore
+      refresh()
     }
   }
 

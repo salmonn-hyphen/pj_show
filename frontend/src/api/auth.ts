@@ -1,5 +1,6 @@
 import apiClient from './client'
 import type { AuthResponse, LoginRequest, RegisterOwnerRequest, RegisterDriverRequest, User } from '@/types'
+import { resolveFileUrl } from '@/utils/format'
 
 function mapBackendUser(baUser: any): User {
   return {
@@ -11,7 +12,9 @@ function mapBackendUser(baUser: any): User {
     email_verified_at: baUser.emailVerified ? new Date().toISOString() : null,
     verification_status: baUser.verificationStatus as any || 'unverified',
     suspension_reason: null,
-    profile_photo_url: baUser.image || null,
+    // Session stores relative paths (e.g. /uploads/profile/x.png); make them absolute
+    // against the backend origin so avatars render regardless of which page set the user.
+    profile_photo_url: resolveFileUrl(baUser.image) || resolveFileUrl(baUser.profilePhoto),
     created_at: baUser.createdAt ? new Date(baUser.createdAt).toISOString() : new Date().toISOString(),
     updated_at: baUser.updatedAt ? new Date(baUser.updatedAt).toISOString() : new Date().toISOString(),
   }

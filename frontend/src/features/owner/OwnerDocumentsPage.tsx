@@ -240,7 +240,7 @@ export function OwnerDocumentsPage() {
                         <StatusBadge status={existing?.status || 'not_uploaded'} type="document" />
                       </div>
                       {existing?.file_url ? (
-                        <img src={existing.file_url} alt={doc.label} className="h-36 w-full rounded-lg object-cover" />
+                        <img src={existing.file_url} alt={doc.label} className="h-52 w-full rounded-lg object-cover" />
                       ) : (
                         <p className="rounded-lg border border-dashed border-slate-200 bg-white p-4 text-center text-xs text-slate-400">
                           Not uploaded
@@ -261,9 +261,21 @@ export function OwnerDocumentsPage() {
                       )}
                     </div>
 
+                    <input
+                      ref={inputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const selected = e.target.files?.[0]
+                        e.target.value = ''
+                        if (selected) handleFileChange(doc.key, selected)
+                      }}
+                    />
+
                     {newPreview ? (
                       <div className="group relative overflow-hidden rounded-lg border border-slate-200">
-                        <img src={newPreview} alt={`${doc.label} preview`} className="h-36 w-full object-cover" />
+                        <img src={newPreview} alt={`${doc.label} preview`} className="h-52 w-full object-cover" />
                         <button
                           type="button"
                           onClick={() => clearFile(doc.key)}
@@ -273,6 +285,26 @@ export function OwnerDocumentsPage() {
                         >
                           <XCircle className="h-4 w-4" />
                         </button>
+                      </div>
+                    ) : existing?.file_url ? (
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => inputRef?.current?.click()}
+                        onKeyDown={(e) => e.key === 'Enter' && inputRef?.current?.click()}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          const dropped = e.dataTransfer.files?.[0]
+                          if (dropped) handleFileChange(doc.key, dropped)
+                        }}
+                        className="group relative cursor-pointer overflow-hidden rounded-lg border border-slate-200"
+                      >
+                        <img src={existing.file_url} alt={doc.label} className="h-52 w-full object-cover" />
+                        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                          <ImagePlus className="h-4 w-4" />
+                          Replace photo
+                        </div>
                       </div>
                     ) : (
                       <button
@@ -285,23 +317,10 @@ export function OwnerDocumentsPage() {
                           if (dropped) handleFileChange(doc.key, dropped)
                         }}
                         disabled={uploading}
-                        className="flex h-36 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 bg-white p-4 text-center transition-colors hover:border-primary/40 hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="flex h-52 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 bg-white p-4 text-center transition-colors hover:border-primary/40 hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        <input
-                          ref={inputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const selected = e.target.files?.[0]
-                            e.target.value = ''
-                            if (selected) handleFileChange(doc.key, selected)
-                          }}
-                        />
                         <ImagePlus className="h-6 w-6 text-slate-400" />
-                        <p className="text-sm font-medium text-slate-700">
-                          {existing?.file_url ? 'Replace photo' : 'Upload photo'}
-                        </p>
+                        <p className="text-sm font-medium text-slate-700">Upload photo</p>
                         <p className="text-xs text-slate-400">Drag & drop or click to browse</p>
                         <p className="text-[10px] text-slate-400">Max size: 5MB (JPG, PNG)</p>
                       </button>

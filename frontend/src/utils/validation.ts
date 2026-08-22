@@ -205,4 +205,20 @@ export type PaymentFormData = z.infer<typeof paymentSchema>
 export type DamageReportFormData = z.infer<typeof damageReportSchema>
 export type DisputeFormData = z.infer<typeof disputeSchema>
 export type ReviewFormData = z.infer<typeof reviewSchema>
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: passwordSchema,
+    confirmNewPassword: z.string().min(1, 'Please confirm your new password'),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmNewPassword'],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: 'New password must be different from the current password',
+    path: ['newPassword'],
+  })
+
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
 export type ProfileFormData = z.infer<typeof profileSchema>

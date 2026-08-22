@@ -25,12 +25,26 @@ export function DriverPaymentsPage() {
   const [paymentMethod, setPaymentMethod] = useState('KBZPay')
   const [uploadingId, setUploadingId] = useState<string | number | null>(null)
   const [qrMethod, setQrMethod] = useState<(typeof PAYMENT_METHODS)[number] | null>(null)
+  // Photo is selected first, then submitted explicitly via the Submit button.
+  const [pendingProof, setPendingProof] = useState<{ id: string | number; file: File; previewUrl: string } | null>(null)
 
   const availablePaymentMethods = PAYMENT_METHODS.filter((method) =>
     ['KBZPay', 'WavePay', 'AYAPay'].includes(method.value),
   )
 
   const selectedMethod = availablePaymentMethods.find((method) => method.value === paymentMethod)
+
+  const clearPendingProof = () => {
+    setPendingProof((current) => {
+      if (current) URL.revokeObjectURL(current.previewUrl)
+      return null
+    })
+  }
+
+  const handleSelectFile = (id: string | number, file: File) => {
+    if (pendingProof) URL.revokeObjectURL(pendingProof.previewUrl)
+    setPendingProof({ id, file, previewUrl: URL.createObjectURL(file) })
+  }
 
   const loadPayments = () => {
     paymentsApi
@@ -44,14 +58,20 @@ export function DriverPaymentsPage() {
     loadPayments()
   }, [])
 
-  const handleUpload = async (payment: Payment, file: File) => {
+  useEffect(() => () => {
+    if (pendingProof) URL.revokeObjectURL(pendingProof.previewUrl)
+  }, [pendingProof])
+
+  const handleSubmitProof = async (payment: Payment) => {
+    if (!pendingProof || pendingProof.id !== payment.id) return
     try {
       setUploadingId(payment.id)
       const formData = new FormData()
       formData.append('method', paymentMethod)
-      formData.append('screenshot', file)
+      formData.append('screenshot', pendingProof.file)
       await paymentsApi.submitPayment(payment.booking_id, formData)
       addToast('Payment proof submitted for review', 'success')
+      clearPendingProof()
       invalidateCache('driver-bookings')
       loadPayments()
     } catch (error: unknown) {
@@ -185,7 +205,39 @@ export function DriverPaymentsPage() {
                                 </span>
                               </button>
                             )}
-                            <UploadProofButton uploading={uploadingId === payment.id} onUpload={(file) => handleUpload(payment, file)} />
+                            {pendingProof?.id === payment.id ? (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={pendingProof.previewUrl}
+                                  alt="Selected proof"
+                                  className="h-10 w-10 rounded-md border border-slate-200 object-cover"
+                                />
+                                <span className="max-w-36 truncate text-xs text-slate-600">{pendingProof.file.name}</span>
+                                <Button
+                                  size="sm"
+                                  variant="success"
+                                  disabled={uploadingId === payment.id}
+                                  onClick={() => handleSubmitProof(payment)}
+                                >
+                                  {uploadingId === payment.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Upload className="h-4 w-4" />
+                                  )}
+                                  Submit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={uploadingId === payment.id}
+                                  onClick={clearPendingProof}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <UploadProofButton onSelect={(file) => handleSelectFile(payment.id, file)} />
+                            )}
                           </div>
                         )}
                       </CardContent>
@@ -237,7 +289,7 @@ function PaymentQrDialog({
   )
 }
 
-function UploadProofButton({ uploading, onUpload }: { uploading: boolean; onUpload: (file: File) => void }) {
+function UploadProofButton({ onSelect }: { onSelect: (file: File) => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const { addToast } = useToast()
 
@@ -247,7 +299,7 @@ function UploadProofButton({ uploading, onUpload }: { uploading: boolean; onUplo
       if (file.size > 5 * 1024 * 1024) {
         addToast('File size must be less than 5MB', 'error')
       } else {
-        onUpload(file)
+        onSelect(file)
       }
       event.target.value = ''
     }
@@ -256,9 +308,9 @@ function UploadProofButton({ uploading, onUpload }: { uploading: boolean; onUplo
   return (
     <>
       <input ref={inputRef} type="file" accept="image/*" onChange={handleChange} className="hidden" />
-      <Button size="sm" variant="success" disabled={uploading} onClick={() => inputRef.current?.click()}>
-        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-        {uploading ? 'Uploading...' : 'Upload proof'}
+      <Button size="sm" variant="success" onClick={() => inputRef.current?.click()}>
+        <Upload className="h-4 w-4" />
+        Choose photo
       </Button>
     </>
   )

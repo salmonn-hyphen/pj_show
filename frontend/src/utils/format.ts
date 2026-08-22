@@ -1,3 +1,13 @@
+import { API_BASE_URL } from '@/constants'
+
+export function resolveFileUrl(path?: string | null): string | null {
+  if (!path) return null
+  if (/^(https?:\/\/|data:|blob:)/i.test(path)) return path
+
+  const backendOrigin = API_BASE_URL.replace(/\/api\/?$/, '')
+  return `${backendOrigin}${path.startsWith('/') ? path : `/${path}`}`
+}
+
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('my-MM', {
     style: 'currency',

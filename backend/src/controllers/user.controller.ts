@@ -1,8 +1,81 @@
 import type { Request, Response } from 'express';
-import { hashPassword } from 'better-auth/crypto';
+import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import prisma from '../lib/prisma.js';
 import { requireUser } from '../lib/api-auth.js';
 import { serializeUser } from '../lib/serializers.js';
+import { revokeCustomSession, getCookieOptions } from '../lib/auth-service.js';
+
+function clearAuthCookies(res: Response) {
+  res.clearCookie("accessToken", getCookieOptions(0));
+  res.clearCookie("refreshToken", getCookieOptions(0));
+  res.clearCookie("session", getCookieOptions(0));
+  res.clearCookie("better-auth.session_token", getCookieOptions(0));
+}
+
+function validateNewPassword(password: string): string | null {
+  if (!password || password.length < 8) {
+    return "New password must be at least 8 characters";
+  }
+  if (!/[A-Z]/.test(password)) return "New password must include an uppercase letter";
+  if (!/[a-z]/.test(password)) return "New password must include a lowercase letter";
+  if (!/[0-9]/.test(password)) return "New password must include a number";
+  if (!/[^A-Za-z0-9]/.test(password)) return "New password must include a special character";
+  return null;
+}
+
+export async function changePassword(req: Request, res: Response) {
+  try {
+    const authUser = await requireUser(req, res);
+    if (!authUser) return;
+
+    const { currentPassword, newPassword } = req.body ?? {};
+
+    if (!currentPassword || typeof currentPassword !== "string") {
+      return res.status(400).json({ error: "Current password is required" });
+    }
+
+    const newPasswordError = validateNewPassword(newPassword);
+    if (newPasswordError) {
+      return res.status(400).json({ error: newPasswordError });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: "New password must be different from the current password" });
+    }
+
+    const account = await prisma.account.findFirst({
+      where: { userId: authUser.id, providerId: "credential" },
+      select: { id: true, password: true },
+    });
+
+    if (!account?.password) {
+      return res.status(404).json({ error: "No password credential found for this account" });
+    }
+
+    const isCurrentPasswordValid = await verifyPassword({
+      password: currentPassword,
+      hash: account.password,
+    });
+
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+
+    await prisma.account.update({
+      where: { id: account.id },
+      data: { password: await hashPassword(newPassword) },
+    });
+
+    // Security: revoke every active session so all devices must sign in again
+    await revokeCustomSession(authUser.id);
+    clearAuthCookies(res);
+
+    return res.json({ message: "Password changed successfully. Please sign in with your new password." });
+  } catch (error: any) {
+    console.error("Change password error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
 
 export async function getUserProfile(req: Request, res: Response) {
   try {
@@ -36,6 +109,12 @@ export async function updateUserProfile(req: Request, res: Response) {
       return res.status(400).json({ error: "Name is required" });
     }
 
+    // Strict security: password changes are only allowed via /user/change-password,
+    // which verifies the current password before applying the new one.
+    if (password !== undefined && String(password).trim() !== "") {
+      return res.status(400).json({ error: "Password changes must use the change-password endpoint" });
+    }
+
     const currentUser = await prisma.user.findUnique({ where: { id: user.id } });
     if (!currentUser) {
       return res.status(404).json({ error: "User not found" });
@@ -49,9 +128,6 @@ export async function updateUserProfile(req: Request, res: Response) {
     if (address !== undefined) data.address = address;
     if (city !== undefined) data.city = city;
     if (township !== undefined) data.township = township;
-    if (password && password.trim() !== "") {
-      data.passwordHash = await hashPassword(password);
-    }
 
     const updatedUser = await prisma.user.update({
       where: { id: user.id },

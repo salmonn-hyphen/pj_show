@@ -95,4 +95,8 @@ export const usersApi = {
     })
     return res.data.data
   },
+
+  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<void> => {
+    await apiClient.post('/user/change-password', data)
+  },
 }

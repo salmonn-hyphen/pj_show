@@ -356,7 +356,7 @@ export function KYCPage() {
             return (
               <Card
                 key={field.key}
-                className="flex h-[280px] flex-col overflow-hidden"
+                className="flex h-[360px] flex-col overflow-hidden"
               >
                 <CardHeader className="pb-2">
                   <CardTitle className="flex items-center gap-2 text-base font-semibold">
@@ -368,7 +368,7 @@ export function KYCPage() {
                 </CardHeader>
                 <CardContent className="flex flex-1 flex-col justify-center">
                   {preview ? (
-                    <div className="group relative mx-auto aspect-video max-h-44 w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    <div className="group relative mx-auto aspect-video max-h-60 w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                       <img
                         src={preview}
                         alt="Upload Preview"
@@ -401,7 +401,7 @@ export function KYCPage() {
                         ].current?.click()
                       }
                       className={cn(
-                        "flex h-44 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center transition-all",
+                        "flex h-60 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 p-6 text-center transition-all",
                         "hover:border-amber-300 hover:bg-amber-50/60",
                       )}
                     >

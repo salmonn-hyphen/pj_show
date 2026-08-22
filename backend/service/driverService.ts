@@ -1,7 +1,6 @@
 import { findUserById, updateDriverProfile, findDriverProfileByUserId, submitKYCDocuments } from "../respositry/driverRespository.js";
-import { hashPassword } from "better-auth/crypto";
 
-export async function updateProfile(userId: string, data: { name: string; phone?: string; password?: string; address?: string; bio?: string }) {
+export async function updateProfile(userId: string, data: { name: string; phone?: string; address?: string; bio?: string }) {
   const currentUser = await findUserById(userId);
   if (!currentUser) {
     throw new Error("User not found");
@@ -20,10 +19,6 @@ export async function updateProfile(userId: string, data: { name: string; phone?
   }
   if (data.bio !== undefined) {
     updateData.bio = data.bio;
-  }
-
-  if (data.password && data.password.trim() !== "") {
-    updateData.passwordHash = await hashPassword(data.password);
   }
 
   return updateDriverProfile(userId, updateData);
