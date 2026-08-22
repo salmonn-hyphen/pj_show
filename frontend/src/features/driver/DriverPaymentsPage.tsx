@@ -1,26 +1,66 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { motion } from 'framer-motion'
-import { DollarSign, ExternalLink, Eye, Search } from 'lucide-react'
+import { DollarSign, ExternalLink, Eye, Loader2, Search, Upload, X } from 'lucide-react'
 import { paymentsApi } from '@/api'
 import type { Payment } from '@/types'
+import { PAYMENT_METHODS } from '@/constants'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { useToast } from '@/providers'
+import { invalidateCache } from '@/hooks/useCachedFetch'
 import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 
 export function DriverPaymentsPage() {
+  const { addToast } = useToast()
   const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [proofPayment, setProofPayment] = useState<Payment | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState('KBZPay')
+  const [uploadingId, setUploadingId] = useState<string | number | null>(null)
+  const [qrMethod, setQrMethod] = useState<(typeof PAYMENT_METHODS)[number] | null>(null)
+
+  const availablePaymentMethods = PAYMENT_METHODS.filter((method) =>
+    ['KBZPay', 'WavePay', 'AYAPay'].includes(method.value),
+  )
+
+  const selectedMethod = availablePaymentMethods.find((method) => method.value === paymentMethod)
+
+  const loadPayments = () => {
+    paymentsApi
+      .getMyPayments()
+      .then((res) => setPayments(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }
 
   useEffect(() => {
-    paymentsApi.getMyPayments().then((res) => setPayments(res.data)).catch(() => {}).finally(() => setLoading(false))
+    loadPayments()
   }, [])
+
+  const handleUpload = async (payment: Payment, file: File) => {
+    try {
+      setUploadingId(payment.id)
+      const formData = new FormData()
+      formData.append('method', paymentMethod)
+      formData.append('screenshot', file)
+      await paymentsApi.submitPayment(payment.booking_id, formData)
+      addToast('Payment proof submitted for review', 'success')
+      invalidateCache('driver-bookings')
+      loadPayments()
+    } catch (error: unknown) {
+      const message = (error as { response?: { data?: { error?: string } } })?.response?.data?.error
+      addToast(message || 'Payment upload failed', 'error')
+    } finally {
+      setUploadingId(null)
+    }
+  }
 
   const filteredPayments = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
@@ -70,6 +110,7 @@ export function DriverPaymentsPage() {
           ) : (
             <div className="grid gap-3">
               {filteredPayments.map((payment) => {
+                const canUpload = ['incomplete', 'PAYMENT_REJECTED'].includes(payment.status)
                 const paymentPurpose = payment.payment_purpose === 'driver_rental_payment' ? 'Rental payment' : 'Payment'
                 const commissionRate = Math.round((payment.commission_rate || 0) * 100)
 
@@ -112,6 +153,41 @@ export function DriverPaymentsPage() {
                             <StatusBadge status={payment.status} type="payment" />
                           </div>
                         </div>
+
+                        {canUpload && (
+                          <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+                            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                              <SelectTrigger className="h-9 w-44 text-xs">
+                                <SelectValue placeholder="Payment type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availablePaymentMethods.map((method) => (
+                                  <SelectItem key={method.value} value={method.value}>
+                                    {method.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {selectedMethod?.qr_code && (
+                              <button
+                                type="button"
+                                onClick={() => setQrMethod(selectedMethod)}
+                                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-1.5 transition-colors hover:bg-slate-100"
+                                title={`Scan ${selectedMethod.label} QR code`}
+                              >
+                                <img
+                                  src={selectedMethod.qr_code}
+                                  alt={`${selectedMethod.label} QR code`}
+                                  className="h-12 w-12 rounded-md object-contain"
+                                />
+                                <span className="pr-1 text-xs font-medium text-slate-600">
+                                  Scan to pay via {selectedMethod.label}
+                                </span>
+                              </button>
+                            )}
+                            <UploadProofButton uploading={uploadingId === payment.id} onUpload={(file) => handleUpload(payment, file)} />
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -123,7 +199,68 @@ export function DriverPaymentsPage() {
       )}
 
       <PaymentProofDialog payment={proofPayment} onOpenChange={(open) => !open && setProofPayment(null)} />
+      <PaymentQrDialog method={qrMethod} onOpenChange={(open) => !open && setQrMethod(null)} />
     </div>
+  )
+}
+
+function PaymentQrDialog({
+  method,
+  onOpenChange,
+}: {
+  method: (typeof PAYMENT_METHODS)[number] | null
+  onOpenChange: (open: boolean) => void
+}) {
+  return (
+    <Dialog open={!!method} onOpenChange={onOpenChange}>
+      <DialogContent hideCloseButton className="w-[calc(100vw-2rem)] border-slate-200 bg-white sm:max-w-sm">
+        <DialogClose className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80">
+          <X className="h-4 w-4" />
+        </DialogClose>
+        <DialogHeader>
+          <DialogTitle className="text-center text-slate-950">{method?.label} QR Code</DialogTitle>
+          <DialogDescription className="text-center">
+            Scan this QR code to pay your rental payment
+          </DialogDescription>
+        </DialogHeader>
+        {method?.qr_code && (
+          <div className="mx-auto">
+            <img
+              src={method.qr_code}
+              alt={`${method.label} QR code`}
+              className="h-56 w-56 rounded-xl border border-slate-200 bg-white object-contain p-2"
+            />
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function UploadProofButton({ uploading, onUpload }: { uploading: boolean; onUpload: (file: File) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const { addToast } = useToast()
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        addToast('File size must be less than 5MB', 'error')
+      } else {
+        onUpload(file)
+      }
+      event.target.value = ''
+    }
+  }
+
+  return (
+    <>
+      <input ref={inputRef} type="file" accept="image/*" onChange={handleChange} className="hidden" />
+      <Button size="sm" variant="success" disabled={uploading} onClick={() => inputRef.current?.click()}>
+        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+        {uploading ? 'Uploading...' : 'Upload proof'}
+      </Button>
+    </>
   )
 }
 

@@ -5,6 +5,7 @@ import {
   serializeDeposit,
   serializePayment,
 } from "./serializers.js";
+import { PaymentStatus, ensureWorkflowStorage } from "./workflow-status.js";
 
 const DEFAULT_AGENCY_COMMISSION_RATE = 0.1;
 const FIRST_TIME_COMMISSION_RATE = 0.2;
@@ -23,7 +24,7 @@ async function getCommissionRateForUser(userId: string, payerRole: PaymentPayerR
     FROM booking_payments
     WHERE user_id = ${userId}::uuid
       AND payer_role = ${payerRole}
-      AND status = 'confirmed'
+      AND status = ${PaymentStatus.PAYMENT_VERIFIED}
   `;
 
   return Number(row?.count || 0) === 0 ? FIRST_TIME_COMMISSION_RATE : DEFAULT_AGENCY_COMMISSION_RATE;
@@ -117,7 +118,10 @@ let bookingPaymentStorageReady: Promise<void> | null = null;
 
 export async function ensureBookingPaymentStorage() {
   if (!bookingPaymentStorageReady) {
-    bookingPaymentStorageReady = createBookingPaymentStorage();
+    bookingPaymentStorageReady = (async () => {
+      await ensureWorkflowStorage();
+      await createBookingPaymentStorage();
+    })();
   }
   return bookingPaymentStorageReady;
 }
@@ -136,7 +140,7 @@ async function createBookingPaymentStorage() {
       "commission_amount" DECIMAL(12, 2) NOT NULL DEFAULT 0,
       "transaction_id" TEXT,
       "screenshot_url" TEXT,
-      "status" TEXT NOT NULL DEFAULT 'under_review',
+      "status" TEXT NOT NULL DEFAULT 'PENDING_PAYMENT_VERIFICATION',
       "admin_notes" TEXT,
       "paid_at" TIMESTAMP(3),
       "confirmed_at" TIMESTAMP(3),
@@ -245,6 +249,36 @@ export async function getBookingPayment(applicationId: string, payerRole: Paymen
     if (isMissingOptionalFinanceTableError(error)) return null;
     throw error;
   }
+}
+
+export async function recomputeCommissionPaymentStatus(applicationId: string) {
+  const [row] = await prisma.$queryRaw<Array<{ next_status: string | null }>>`
+    SELECT CASE
+      WHEN COUNT(*) FILTER (
+        WHERE p.payer_role IN ('DRIVER', 'OWNER') AND p.status = 'PAYMENT_REJECTED'
+      ) > 0 THEN 'PAYMENT_REJECTED'
+      WHEN COUNT(DISTINCT p.payer_role) FILTER (
+        WHERE p.payer_role IN ('DRIVER', 'OWNER') AND p.status = 'PAYMENT_VERIFIED'
+      ) >= 2 THEN 'PAYMENT_VERIFIED'
+      WHEN COUNT(*) FILTER (
+        WHERE p.payer_role IN ('DRIVER', 'OWNER') AND p.status = 'PENDING_PAYMENT_VERIFICATION'
+      ) > 0 THEN 'PENDING_PAYMENT_VERIFICATION'
+      ELSE NULL
+    END AS next_status
+    FROM booking_payments p
+    WHERE p.booking_id = ${applicationId}::uuid
+  `.catch((error) => {
+    if (isMissingOptionalFinanceTableError(error)) return [] as Array<{ next_status: string | null }>;
+    throw error;
+  });
+
+  await prisma.$executeRaw`
+    UPDATE car_applications
+    SET commission_payment_status = ${row?.next_status || null}::"PaymentStatus",
+        updated_at = NOW()
+    WHERE id = ${applicationId}::uuid
+      AND NOT (owner_agreement_agreed_at IS NOT NULL AND driver_agreement_agreed_at IS NOT NULL)
+  `;
 }
 
 export async function getBookingDeposit(applicationId: string) {

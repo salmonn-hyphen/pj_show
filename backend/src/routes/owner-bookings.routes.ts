@@ -5,6 +5,7 @@ import {
   getOwnerBooking,
   acceptBooking,
   rejectBooking,
+  sendOwnerAgreement,
 } from "../controllers/owner-bookings.controller.js";
 
 const router = Router();
@@ -13,5 +14,6 @@ router.get("/", authMiddleware, listOwnerBookings);
 router.get("/:id", authMiddleware, getOwnerBooking);
 router.post("/:id/accept", authMiddleware, acceptBooking);
 router.post("/:id/reject", authMiddleware, rejectBooking);
+router.post("/:id/send-agreement", authMiddleware, sendOwnerAgreement);
 
 export default router;

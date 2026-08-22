@@ -34,7 +34,6 @@ import { OwnerReviewsPage } from '@/features/owner/OwnerReviewsPage'
 import { OwnerDisputesPage } from '@/features/owner/OwnerDisputesPage'
 import { OwnerDocumentsPage } from '@/features/owner/OwnerDocumentsPage'
 import { OwnerProfilePage } from '@/features/owner/OwnerProfilePage'
-import { OwnerAIMatchmakerPage } from '@/features/owner/OwnerAIMatchmakerPage'
 
 // Driver pages
 import { DriverDashboardPage } from '@/features/driver/DriverDashboardPage'
@@ -102,7 +101,6 @@ export const router = createBrowserRouter([
       { path: 'cars/new', element: <OwnerCarFormPage /> },
       { path: 'cars/:id/edit', element: <OwnerCarFormPage /> },
       { path: 'bookings', element: <OwnerBookingsPage /> },
-      { path: 'ai-matchmaker', element: <OwnerAIMatchmakerPage /> },
       { path: 'earnings', element: <OwnerEarningsPage /> },
       { path: 'payments', element: <OwnerPaymentsPage /> },
       { path: 'deposits', element: <OwnerDepositsPage /> },

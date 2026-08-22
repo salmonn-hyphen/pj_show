@@ -15,9 +15,10 @@ import { ArrowRight, Calendar, Car, CheckCircle2, Clock3, Eye, Loader2, ShieldAl
 
 function canCancelDriverBooking(booking: Booking) {
   const paymentStatus = booking.payment_status || booking.payment?.status || 'incomplete'
-  const paymentSuccessful = paymentStatus === 'confirmed' || !!booking.payment?.confirmed_at || !!booking.payment?.paid_at
+  const paymentSuccessful =
+    paymentStatus === 'PAYMENT_VERIFIED' || !!booking.payment?.confirmed_at || !!booking.payment?.paid_at
 
-  return ['requested', 'accepted'].includes(booking.status) && !paymentSuccessful
+  return ['REQUESTED', 'PENDING_ADMIN_APPROVAL'].includes(booking.status) && !paymentSuccessful
 }
 
 export function DriverBookingsPage() {
@@ -80,9 +81,11 @@ export function DriverBookingsPage() {
   }
 
   const bookingStats = useMemo(() => {
-    const active = bookings.filter((booking) => ['accepted', 'payment_pending', 'active'].includes(booking.status)).length
-    const pending = bookings.filter((booking) => booking.status === 'requested').length
-    const completed = bookings.filter((booking) => booking.status === 'completed').length
+    const active = bookings.filter((booking) => ['BOOKING_APPROVED', 'PENDING_ADMIN_APPROVAL'].includes(booking.status)).length
+    const pending = bookings.filter((booking) => booking.status === 'REQUESTED').length
+    const completed = bookings.filter(
+      (booking) => booking.agreement_status === 'ACTIVE' || (!!booking.owner_agreement_agreed_at && !!booking.driver_agreement_agreed_at),
+    ).length
 
     return { active, pending, completed }
   }, [bookings])
@@ -90,7 +93,7 @@ export function DriverBookingsPage() {
   const visibleBookings = useMemo(() => {
     if (statusFilter === 'all') return bookings
     if (statusFilter === 'active') {
-      return bookings.filter((booking) => ['accepted', 'payment_pending', 'active'].includes(booking.status))
+      return bookings.filter((booking) => ['BOOKING_APPROVED', 'PENDING_ADMIN_APPROVAL'].includes(booking.status))
     }
 
     return bookings.filter((booking) => booking.status === statusFilter)

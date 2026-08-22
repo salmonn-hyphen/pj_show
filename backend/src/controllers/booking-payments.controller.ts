@@ -8,9 +8,11 @@ import {
   getBookingPayment,
   getPaymentQuote,
   notifyAdminsAboutPayment,
+  recomputeCommissionPaymentStatus,
   serializeIncompletePayment,
   type PaymentPayerRole,
 } from "../lib/booking-finance.js";
+import { BookingStatus, PaymentStatus, ensureWorkflowStorage } from "../lib/workflow-status.js";
 
 export async function submitPayment(req: Request, res: Response) {
   try {
@@ -19,22 +21,35 @@ export async function submitPayment(req: Request, res: Response) {
     const bookingId = String(req.params.id);
     const payerRole: PaymentPayerRole = authUser.role === "OWNER" ? "OWNER" : "DRIVER";
 
+    await ensureWorkflowStorage();
+
     const application = await prisma.carApplication.findFirst({
       where: {
         id: bookingId,
         ...(payerRole === "OWNER" ? { ownerId: authUser.id } : { driverId: authUser.id }),
-        ownerApprovalStatus: "APPROVED",
-        adminApprovalStatus: "APPROVED",
+        status: BookingStatus.BOOKING_APPROVED,
+        agreementSentAt: { not: null },
       },
       include: { car: true, driver: true, owner: true },
     }) as any;
 
     if (!application) {
-      return res.status(404).json({ error: "Approved booking not found" });
-    }
+      const anyApplication = await prisma.carApplication.findFirst({
+        where: {
+          id: bookingId,
+          ...(payerRole === "OWNER" ? { ownerId: authUser.id } : { driverId: authUser.id }),
+        },
+        select: { id: true },
+      });
 
-    if (!application.ownerAgreementAgreedAt || !application.driverAgreementAgreedAt) {
-      return res.status(403).json({ error: "Both owner and driver must agree before payment can be submitted" });
+      if (!anyApplication) {
+        return res.status(404).json({ error: "Booking not found" });
+      }
+
+      return res.status(403).json({
+        error: "Commission payment can only be submitted after the admin approves this booking",
+        code: "BOOKING_NOT_APPROVED",
+      });
     }
 
     const method = String(req.body.method || "");
@@ -68,7 +83,7 @@ export async function submitPayment(req: Request, res: Response) {
         ${String(quote.commissionAmount)}::decimal,
         ${req.body.transaction_id || null},
         ${screenshotUrl},
-        'under_review',
+        ${PaymentStatus.PENDING_PAYMENT_VERIFICATION},
         NOW(),
         NOW(),
         NOW()
@@ -82,13 +97,15 @@ export async function submitPayment(req: Request, res: Response) {
         commission_amount = EXCLUDED.commission_amount,
         transaction_id = EXCLUDED.transaction_id,
         screenshot_url = EXCLUDED.screenshot_url,
-        status = 'under_review',
+        status = ${PaymentStatus.PENDING_PAYMENT_VERIFICATION},
         admin_notes = NULL,
         paid_at = NOW(),
         confirmed_at = NULL,
         confirmed_by = NULL,
         updated_at = NOW()
     `;
+
+    await recomputeCommissionPaymentStatus(application.id);
 
     const payment = await getBookingPayment(application.id, payerRole);
     try {
@@ -141,10 +158,8 @@ export async function getDriverPayments(req: Request, res: Response) {
     const applications = await prisma.carApplication.findMany({
       where: {
         driverId: authUser.id,
-        ownerApprovalStatus: "APPROVED",
-        adminApprovalStatus: "APPROVED",
-        ownerAgreementAgreedAt: { not: null },
-        driverAgreementAgreedAt: { not: null },
+        status: BookingStatus.BOOKING_APPROVED,
+        agreementSentAt: { not: null },
       },
       include: { car: true, driver: true, owner: true },
       orderBy: { updatedAt: "desc" },
@@ -176,10 +191,8 @@ export async function getOwnerPayments(req: Request, res: Response) {
     const applications = await prisma.carApplication.findMany({
       where: {
         ownerId: authUser.id,
-        ownerApprovalStatus: "APPROVED",
-        adminApprovalStatus: "APPROVED",
-        ownerAgreementAgreedAt: { not: null },
-        driverAgreementAgreedAt: { not: null },
+        status: BookingStatus.BOOKING_APPROVED,
+        agreementSentAt: { not: null },
       },
       include: { car: true, driver: true, owner: true },
       orderBy: { updatedAt: "desc" },
@@ -220,7 +233,7 @@ export async function getPendingPayments(req: Request, res: Response) {
       LEFT JOIN users payer ON payer.id = p.user_id
       LEFT JOIN users driver ON driver.id = a.driver_id
       LEFT JOIN users owner ON owner.id = a.owner_id
-      WHERE p.status = 'under_review'
+      WHERE p.status = ${PaymentStatus.PENDING_PAYMENT_VERIFICATION}
       ORDER BY p.paid_at ASC NULLS LAST, p.created_at ASC
     `;
 
@@ -238,7 +251,7 @@ export async function confirmPayment(req: Request, res: Response) {
 
     await prisma.$executeRaw`
       UPDATE booking_payments
-      SET status = 'confirmed',
+      SET status = ${PaymentStatus.PAYMENT_VERIFIED},
           admin_notes = ${req.body.notes || null},
           confirmed_at = NOW(),
           confirmed_by = ${admin.id}::uuid,
@@ -266,6 +279,41 @@ export async function confirmPayment(req: Request, res: Response) {
       return res.status(404).json({ error: "Payment not found" });
     }
 
+    await recomputeCommissionPaymentStatus(payment.booking_id);
+
+    const application = await prisma.carApplication.findUnique({
+      where: { id: payment.booking_id },
+      include: { car: true },
+    });
+
+    if (application?.commissionPaymentStatus === PaymentStatus.PAYMENT_VERIFIED && application.agreementSentAt) {
+      const carName = [application.car?.brand, application.car?.model].filter(Boolean).join(" ") || "your booking";
+      await prisma.notification.createMany({
+        data: [
+          {
+            id: crypto.randomUUID(),
+            receiverId: application.driverId,
+            triggerUserId: admin.id,
+            title: "Agreement unlocked",
+            message: `Commission payment verified. You can now open and sign the agreement for ${carName}.`,
+            type: "agreement_unlocked",
+            entityId: application.id,
+          },
+          {
+            id: crypto.randomUUID(),
+            receiverId: application.ownerId,
+            triggerUserId: admin.id,
+            title: "Agreement unlocked",
+            message: `Commission payment verified. You can now open and sign the agreement for ${carName}.`,
+            type: "agreement_unlocked",
+            entityId: application.id,
+          },
+        ],
+      }).catch((notificationError) => {
+        console.error("Agreement unlock notification error:", notificationError);
+      });
+    }
+
     return res.json({ data: serializePayment(payment) });
   } catch (error: any) {
     console.error("Confirm payment error:", error);
@@ -280,7 +328,7 @@ export async function rejectPayment(req: Request, res: Response) {
 
     await prisma.$executeRaw`
       UPDATE booking_payments
-      SET status = 'failed',
+      SET status = ${PaymentStatus.PAYMENT_REJECTED},
           admin_notes = ${req.body.reason || "Payment rejected"},
           confirmed_at = NULL,
           confirmed_by = ${admin.id}::uuid,
@@ -307,6 +355,8 @@ export async function rejectPayment(req: Request, res: Response) {
     if (!payment) {
       return res.status(404).json({ error: "Payment not found" });
     }
+
+    await recomputeCommissionPaymentStatus(payment.booking_id);
 
     return res.json({ data: serializePayment(payment) });
   } catch (error: any) {

@@ -16,9 +16,10 @@ import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
 
 function canCancelDriverBooking(booking: Booking) {
   const paymentStatus = booking.payment_status || booking.payment?.status || 'incomplete'
-  const paymentSuccessful = paymentStatus === 'confirmed' || !!booking.payment?.confirmed_at || !!booking.payment?.paid_at
+  const paymentSuccessful =
+    paymentStatus === 'PAYMENT_VERIFIED' || !!booking.payment?.confirmed_at || !!booking.payment?.paid_at
 
-  return ['requested', 'accepted'].includes(booking.status) && !paymentSuccessful
+  return ['REQUESTED', 'PENDING_ADMIN_APPROVAL'].includes(booking.status) && !paymentSuccessful
 }
 
 export function DriverBookingDetailPage() {
@@ -119,7 +120,12 @@ export function DriverBookingDetailPage() {
   const paymentStatus = booking.payment_status || booking.payment?.status || 'incomplete'
   const depositStatus = booking.deposit_status || booking.deposit?.status || 'incomplete'
   const agreementComplete = !!booking.owner_agreement_agreed_at && !!booking.driver_agreement_agreed_at
-  const canSubmitPayment = booking.status === 'accepted' && agreementComplete && ['incomplete', 'failed'].includes(paymentStatus)
+  const agreementSent = !!booking.agreement_sent_at
+  // New flow: commission payment happens BEFORE the agreement is unlocked and signed
+  const canSubmitPayment =
+    booking.status === 'BOOKING_APPROVED' &&
+    agreementSent &&
+    ['incomplete', 'PAYMENT_REJECTED'].includes(paymentStatus)
   const canCancel = canCancelDriverBooking(booking)
 
   const carName = booking.car ? `${booking.car.brand} ${booking.car.model}` : `Car #${booking.car_id}`
@@ -196,10 +202,10 @@ export function DriverBookingDetailPage() {
               {canSubmitPayment && !showPaymentForm && (
                 <Button onClick={() => setShowPaymentForm(true)}><DollarSign className="w-4 h-4" /> Submit Payment</Button>
               )}
-              {paymentStatus === 'confirmed' && depositStatus === 'incomplete' && !showDepositForm && (
+              {paymentStatus === 'PAYMENT_VERIFIED' && agreementComplete && depositStatus === 'incomplete' && !showDepositForm && (
                 <Button onClick={() => setShowDepositForm(true)}><Shield className="w-4 h-4" /> Submit Deposit</Button>
               )}
-              {booking.status === 'completed' && (
+              {booking.status === 'BOOKING_APPROVED' && agreementComplete && (
                 <Button onClick={() => navigate(`/driver/reviews?booking=${booking.id}`)}><Star className="w-4 h-4" /> Leave Review</Button>
               )}
               </div>

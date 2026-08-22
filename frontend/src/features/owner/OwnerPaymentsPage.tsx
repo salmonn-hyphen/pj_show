@@ -98,7 +98,7 @@ export function OwnerPaymentsPage() {
           ) : (
             <div className="grid gap-3">
               {filteredPayments.map((payment) => {
-                const canUpload = ['incomplete', 'failed'].includes(payment.status)
+                const canUpload = ['incomplete', 'PAYMENT_REJECTED'].includes(payment.status)
                 const paymentPurpose = payment.payment_purpose === 'owner_commission' ? 'Owner commission' : 'Payment'
                 const commissionRate = Math.round((payment.commission_rate || 0) * 100)
 

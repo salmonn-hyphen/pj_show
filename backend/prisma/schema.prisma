@@ -52,6 +52,24 @@ enum RentalStatus {
   CANCELLED
 }
 
+enum BookingStatus {
+  REQUESTED
+  PENDING_ADMIN_APPROVAL
+  BOOKING_APPROVED
+  BOOKING_REJECTED
+}
+
+enum AgreementStatus {
+  PENDING_COMMISSION_PAYMENT
+  ACTIVE
+}
+
+enum PaymentStatus {
+  PENDING_PAYMENT_VERIFICATION
+  PAYMENT_VERIFIED
+  PAYMENT_REJECTED
+}
+
 enum OTPPurpose {
   REGISTER
   LOGIN
@@ -257,6 +275,10 @@ model CarApplication {
 
   ownerApprovalStatus ApprovalStatus @default(PENDING) @map("owner_approval_status")
   adminApprovalStatus ApprovalStatus @default(PENDING) @map("admin_approval_status")
+
+  status                  BookingStatus    @default(REQUESTED)
+  agreementStatus         AgreementStatus  @default(PENDING_COMMISSION_PAYMENT) @map("agreement_status")
+  commissionPaymentStatus PaymentStatus?   @map("commission_payment_status")
 
   approvedAt DateTime? @map("approved_at")
   agreementSentAt DateTime? @map("agreement_sent_at")

@@ -9,6 +9,12 @@ import {
   serializeBookingsWithFinancials,
   withDatabaseRetry,
 } from "../lib/booking-finance.js";
+import {
+  AgreementStatus,
+  BookingStatus,
+  type BookingStatusValue,
+  ensureWorkflowStorage,
+} from "../lib/workflow-status.js";
 
 export const createDriverBooking = async (req: Request, res: Response) => {
   try {
@@ -35,6 +41,7 @@ export const createDriverBooking = async (req: Request, res: Response) => {
       }
 
       await ensureCarApplicationStorage();
+      await ensureWorkflowStorage();
 
       const car = await prisma.car.findUnique({
         where: { id: carId },
@@ -61,8 +68,13 @@ export const createDriverBooking = async (req: Request, res: Response) => {
         update: {
           ownerApprovalStatus: "PENDING",
           adminApprovalStatus: "PENDING",
+          status: BookingStatus.REQUESTED,
+          agreementStatus: AgreementStatus.PENDING_COMMISSION_PAYMENT,
+          commissionPaymentStatus: null,
           approvedAt: null,
           agreementSentAt: null,
+          ownerAgreementAgreedAt: null,
+          driverAgreementAgreedAt: null,
           wardRecommendationLetter: driverNotes,
         },
         create: {
@@ -73,6 +85,9 @@ export const createDriverBooking = async (req: Request, res: Response) => {
           wardRecommendationLetter: driverNotes,
           ownerApprovalStatus: "PENDING",
           adminApprovalStatus: "PENDING",
+          status: BookingStatus.REQUESTED,
+          agreementStatus: AgreementStatus.PENDING_COMMISSION_PAYMENT,
+          commissionPaymentStatus: null,
         },
         include: {
           car: { include: { carImages: true, owner: { include: { ownerProfile: true } } } },
@@ -115,17 +130,21 @@ export const listDriverBookings = async (req: Request, res: Response) => {
     if (!authUser) return;
 
     const status = typeof req.query.status === "string" ? req.query.status : null;
-    const statusMap: Record<string, "PENDING" | "APPROVED" | "REJECTED"> = {
-      requested: "PENDING",
-      accepted: "APPROVED",
-      active: "APPROVED",
-      cancelled: "REJECTED",
+    const statusMap: Record<string, BookingStatusValue> = {
+      requested: BookingStatus.REQUESTED,
+      pending_admin_approval: BookingStatus.PENDING_ADMIN_APPROVAL,
+      approved: BookingStatus.BOOKING_APPROVED,
+      accepted: BookingStatus.BOOKING_APPROVED,
+      rejected: BookingStatus.BOOKING_REJECTED,
+      cancelled: BookingStatus.BOOKING_REJECTED,
     };
+
+    await ensureWorkflowStorage();
 
     const applications = await prisma.carApplication.findMany({
       where: {
         driverId: authUser.id,
-        ...(status && status !== "all" && statusMap[status] ? { ownerApprovalStatus: statusMap[status] } : {}),
+        ...(status && status !== "all" && statusMap[status] ? { status: statusMap[status] } : {}),
       },
       include: {
         car: { include: { carImages: true, owner: { include: { ownerProfile: true } } } },

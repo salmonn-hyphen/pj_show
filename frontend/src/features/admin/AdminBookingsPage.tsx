@@ -60,8 +60,9 @@ export function AdminBookingsPage() {
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="requested">Requested</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
+          <TabsTrigger value="pending_admin_approval">Pending Review</TabsTrigger>
+          <TabsTrigger value="approved">Approved</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected</TabsTrigger>
         </TabsList>
         <TabsContent value={activeTab} className="mt-4">
           {bookings.length === 0 ? (
@@ -92,16 +93,20 @@ export function AdminBookingsPage() {
                               Owner: {booking.owner_approval_status || 'PENDING'} / Admin: {booking.admin_approval_status || 'PENDING'}
                             </span>
                             {booking.agreement_sent_at && (
-                              <span className="text-[11px] text-emerald-600">Agreement sent</span>
+                              <span className="text-[11px] text-emerald-600">
+                                Agreement sent
+                                {booking.is_agreement_locked === false && ' · Unlocked'}
+                                {booking.is_agreement_locked === true && ' · Locked (payment pending)'}
+                              </span>
                             )}
                           </div>
-                          {booking.owner_approval_status === 'APPROVED' && booking.admin_approval_status === 'PENDING' && (
+                          {booking.status === 'PENDING_ADMIN_APPROVAL' && (
                             <div className="flex gap-2">
-                              <Button size="sm" variant="success" disabled={processingId === booking.id} onClick={() => handleAdminAction(booking, 'accept')}>Accept</Button>
+                              <Button size="sm" variant="success" disabled={processingId === booking.id} onClick={() => handleAdminAction(booking, 'accept')}>Approve</Button>
                               <Button size="sm" variant="destructive" disabled={processingId === booking.id} onClick={() => handleAdminAction(booking, 'reject')}>Reject</Button>
                             </div>
                           )}
-                          {booking.admin_approval_status === 'APPROVED' && !booking.agreement_sent_at && (
+                          {booking.status === 'BOOKING_APPROVED' && !booking.agreement_sent_at && (
                             <Button size="sm" disabled={processingId === booking.id} onClick={() => handleAdminAction(booking, 'agreement')}>
                               Send Agreement
                             </Button>

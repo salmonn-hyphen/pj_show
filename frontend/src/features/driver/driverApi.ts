@@ -20,7 +20,7 @@ export const driversApi = {
           start_date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
           end_date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
           total_amount: 180000,
-          status: 'completed',
+          status: 'BOOKING_APPROVED',
           driver_notes: null,
           owner_notes: null,
           rejection_reason: null,

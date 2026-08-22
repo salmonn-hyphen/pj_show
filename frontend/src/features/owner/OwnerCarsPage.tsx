@@ -133,7 +133,7 @@ function OwnerCarsContent() {
           <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-blue-100 text-blue-700">
                   <SlidersHorizontal className="h-4 w-4" />
                 </div>
                 Filter posts
@@ -232,12 +232,12 @@ function OwnerCarsContent() {
                             </div>
                           </div>
 
-                          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                            <p className="text-[10px] font-medium uppercase text-emerald-700">Rental price</p>
-                            <p className="text-lg font-semibold text-emerald-950">
+                          <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                            <p className="text-[10px] font-medium uppercase text-blue-700">Rental price</p>
+                            <p className="text-lg font-semibold text-blue-950">
                               {formatCurrency(car.daily_rate)}
                             </p>
-                            <p className="text-[11px] text-emerald-700">per day</p>
+                            <p className="text-[11px] text-blue-700">per day</p>
                           </div>
                         </div>
                       </div>
@@ -245,7 +245,7 @@ function OwnerCarsContent() {
                       <div className="mt-auto flex flex-col gap-2 border-t border-slate-200 bg-slate-50 px-3 py-2.5">
                         <div className="flex flex-wrap gap-1.5">
                           <StatusBadge status={car.status} type="verification" />
-                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${car.is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${car.is_available ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'}`}>
                             {car.is_available ? 'Available' : 'Unavailable'}
                           </span>
                         </div>
@@ -292,7 +292,7 @@ function OwnerCarsContent() {
                     className={cn(
                       'h-8 w-8 rounded-lg text-sm font-medium transition-colors',
                       pageNumber === safePage
-                        ? 'bg-emerald-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'text-slate-600 hover:bg-slate-100',
                     )}
                   >

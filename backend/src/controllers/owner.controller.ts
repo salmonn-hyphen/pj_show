@@ -49,6 +49,16 @@ export const updateOwnerProfile = async (req: Request, res: Response) => {
     const city = req.body.city || null;
     const township = req.body.township || null;
 
+    if (nrcText !== undefined) {
+      const existingProfile = await prisma.ownerProfile.findUnique({
+        where: { userId: user.id },
+      });
+
+      if (existingProfile?.adminApprovalStatus === "APPROVED") {
+        return res.status(403).json({ error: "Your KYC is already verified. NRC number can no longer be changed." });
+      }
+    }
+
     const ownerProfile = await prisma.ownerProfile.upsert({
       where: { userId: user.id },
       create: {
@@ -127,6 +137,14 @@ export const uploadOwnerDocument = async (req: Request, res: Response) => {
 
     if (typeof fileSize === "number" && fileSize > 5 * 1024 * 1024) {
       return res.status(400).json({ error: "Document file must be smaller than 5MB" });
+    }
+
+    const existingProfile = await prisma.ownerProfile.findUnique({
+      where: { userId: user.id },
+    });
+
+    if (existingProfile?.adminApprovalStatus === "APPROVED") {
+      return res.status(403).json({ error: "Your KYC is already verified. NRC documents can no longer be changed." });
     }
 
     const ownerProfile = await prisma.ownerProfile.upsert({

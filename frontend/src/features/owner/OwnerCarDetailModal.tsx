@@ -104,21 +104,21 @@ export function OwnerCarDetailModal({ car, onClose, onToggleAvailability }: Owne
               </h2>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 <StatusBadge status={car.status} type="verification" />
-                <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold', car.is_available ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600')}>
+                <span className={cn('rounded-full px-2 py-0.5 text-[11px] font-semibold', car.is_available ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600')}>
                   {car.is_available ? 'Available' : 'Unavailable'}
                 </span>
               </div>
             </div>
-            <div className="shrink-0 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-right">
-              <p className="text-[10px] font-medium uppercase text-emerald-700">Rental price</p>
-              <p className="text-sm font-semibold text-emerald-950">{formatCurrency(car.daily_rate)}</p>
+            <div className="shrink-0 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-right">
+              <p className="text-[10px] font-medium uppercase text-blue-700">Rental price</p>
+              <p className="text-sm font-semibold text-blue-950">{formatCurrency(car.daily_rate)}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             {infoItems.map((item) => (
               <div key={item.label} className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-2">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-700">
                   {item.icon}
                 </span>
                 <div className="min-w-0">
@@ -144,7 +144,7 @@ export function OwnerCarDetailModal({ car, onClose, onToggleAvailability }: Owne
             )}
             <Button
               size="sm"
-              className="h-8 px-3 text-xs bg-emerald-600 text-white hover:bg-emerald-700"
+              className="h-8 px-3 text-xs bg-blue-600 text-white hover:bg-blue-700"
               onClick={() => onToggleAvailability(car.id)}
             >
               <Power className="h-3.5 w-3.5 mr-1.5" /> {car.is_available ? 'Deactivate' : 'Activate'}

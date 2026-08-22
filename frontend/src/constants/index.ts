@@ -46,21 +46,27 @@ export function isKycApproved(status?: string | null) {
 }
 
 export const BOOKING_LABELS: Record<string, string> = {
-  requested: "Requested",
-  accepted: "Accepted",
-  payment_pending: "Payment Pending",
-  active: "Active",
-  completed: "Completed",
-  cancelled: "Cancelled",
+  REQUESTED: "Requested",
+  PENDING_ADMIN_APPROVAL: "Pending Admin Approval",
+  BOOKING_APPROVED: "Approved",
+  BOOKING_REJECTED: "Rejected",
 };
 
 export const BOOKING_COLORS: Record<string, string> = {
-  requested: "bg-blue-100 text-blue-700",
-  accepted: "bg-indigo-100 text-indigo-700",
-  payment_pending: "bg-yellow-100 text-yellow-700",
-  active: "bg-green-100 text-green-700",
-  completed: "bg-gray-100 text-gray-700",
-  cancelled: "bg-red-100 text-red-700",
+  REQUESTED: "bg-blue-100 text-blue-700",
+  PENDING_ADMIN_APPROVAL: "bg-yellow-100 text-yellow-700",
+  BOOKING_APPROVED: "bg-green-100 text-green-700",
+  BOOKING_REJECTED: "bg-red-100 text-red-700",
+};
+
+export const AGREEMENT_LABELS: Record<string, string> = {
+  PENDING_COMMISSION_PAYMENT: "Pending Commission Payment",
+  ACTIVE: "Active",
+};
+
+export const AGREEMENT_COLORS: Record<string, string> = {
+  PENDING_COMMISSION_PAYMENT: "bg-yellow-100 text-yellow-700",
+  ACTIVE: "bg-green-100 text-green-700",
 };
 
 export const PAYMENT_METHODS = [

@@ -14,8 +14,8 @@ export async function updateProfile(req: Request, res: Response) {
 
     const { name, phone, password, address, bio } = req.body;
 
-    if (!name || !phone) {
-      return res.status(400).json({ error: "Name and phone number are required" });
+    if (!name) {
+      return res.status(400).json({ error: "Name is required" });
     }
 
     const updatedUser = await updateProfileService(user.id, {

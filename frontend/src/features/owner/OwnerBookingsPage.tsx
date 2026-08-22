@@ -18,10 +18,10 @@ import { Calendar, Car, Eye, Mail, MapPin, SlidersHorizontal, X } from 'lucide-r
 
 const BOOKING_FILTERS = [
   { value: 'all', label: 'All' },
-  { value: 'requested', label: 'Requested' },
-  { value: 'accepted', label: 'Accepted' },
-  { value: 'active', label: 'Active' },
-  { value: 'completed', label: 'Completed' },
+  { value: 'REQUESTED', label: 'Requested' },
+  { value: 'PENDING_ADMIN_APPROVAL', label: 'Admin Review' },
+  { value: 'BOOKING_APPROVED', label: 'Approved' },
+  { value: 'BOOKING_REJECTED', label: 'Rejected' },
 ] as const
 
 type BookingFilter = (typeof BOOKING_FILTERS)[number]['value']
@@ -76,7 +76,7 @@ function OwnerBookingsContent() {
       setProcessing(true)
       if (actionType === 'accept') {
         await bookingsApi.acceptBooking(actionId)
-        addToast('Booking accepted', 'success')
+        addToast('Booking accepted — waiting for admin approval', 'success')
       } else {
         await bookingsApi.rejectBooking(actionId, 'Rejected by owner')
         addToast('Booking rejected', 'info')
@@ -90,6 +90,23 @@ function OwnerBookingsContent() {
       setProcessing(false)
     }
   }, [actionId, actionType, addToast, handleCloseDialog, refresh])
+
+  const handleSendAgreement = useCallback(async (booking: Booking) => {
+    try {
+      setProcessing(true)
+      await bookingsApi.sendOwnerAgreement(booking.id)
+      addToast('Agreement sent — commission payment is required before it unlocks', 'success')
+      invalidateCache('owner-bookings')
+      refresh()
+    } catch (error) {
+      const message = (
+        error as { response?: { data?: { error?: string } } }
+      )?.response?.data?.error
+      addToast(message || 'Failed to send agreement', 'error')
+    } finally {
+      setProcessing(false)
+    }
+  }, [addToast, refresh])
 
   if (loading) return <LoadingSkeleton type="list" count={4} />
 
@@ -111,6 +128,8 @@ function OwnerBookingsContent() {
               bookings={filteredBookings}
               onRequestAction={handleRequestAction}
               onViewDriver={handleViewDriver}
+              onSendAgreement={handleSendAgreement}
+              processing={processing}
             />
           )}
         </TabsContent>
@@ -160,10 +179,14 @@ const BookingList = memo(function BookingList({
   bookings,
   onRequestAction,
   onViewDriver,
+  onSendAgreement,
+  processing,
 }: {
   bookings: Booking[]
   onRequestAction: (id: string | number, type: BookingAction) => void
   onViewDriver: (booking: Booking) => void
+  onSendAgreement: (booking: Booking) => void
+  processing: boolean
 }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -173,6 +196,8 @@ const BookingList = memo(function BookingList({
           booking={booking}
           onRequestAction={onRequestAction}
           onViewDriver={onViewDriver}
+          onSendAgreement={onSendAgreement}
+          processing={processing}
         />
       ))}
     </div>
@@ -183,10 +208,14 @@ const BookingRequestCard = memo(function BookingRequestCard({
   booking,
   onRequestAction,
   onViewDriver,
+  onSendAgreement,
+  processing,
 }: {
   booking: Booking
   onRequestAction: (id: string | number, type: BookingAction) => void
   onViewDriver: (booking: Booking) => void
+  onSendAgreement: (booking: Booking) => void
+  processing: boolean
 }) {
   const paymentStatus = booking.owner_payment_status || booking.owner_payment?.status || 'incomplete'
   const driverName = booking.driver?.name || `Driver #${booking.driver_id}`
@@ -202,6 +231,10 @@ const BookingRequestCard = memo(function BookingRequestCard({
   const handleViewDriver = useCallback(() => {
     onViewDriver(booking)
   }, [booking, onViewDriver])
+
+  const handleSendAgreement = useCallback(() => {
+    onSendAgreement(booking)
+  }, [booking, onSendAgreement])
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="h-full">
@@ -246,11 +279,20 @@ const BookingRequestCard = memo(function BookingRequestCard({
           </div>
 
           <div className="mt-auto border-t border-slate-200 bg-slate-50 px-4 py-3">
-            {booking.status === 'requested' ? (
+            {booking.status === 'REQUESTED' ? (
               <div className="grid grid-cols-3 gap-2">
                 <Button size="sm" variant="outline" onClick={handleViewDriver}>Info</Button>
                 <Button size="sm" variant="success" onClick={handleAccept}>Accept</Button>
                 <Button size="sm" variant="destructive" onClick={handleReject}>Reject</Button>
+              </div>
+            ) : booking.status === 'PENDING_ADMIN_APPROVAL' ? (
+              <Button size="sm" variant="outline" disabled className="w-full">
+                Waiting for admin approval
+              </Button>
+            ) : booking.status === 'BOOKING_APPROVED' && !booking.agreement_sent_at ? (
+              <div className="grid grid-cols-2 gap-2">
+                <Button size="sm" variant="outline" onClick={handleViewDriver}>Info</Button>
+                <Button size="sm" onClick={handleSendAgreement} disabled={processing}>Send Agreement</Button>
               </div>
             ) : (
               <Button size="sm" variant="outline" onClick={handleViewDriver} className="w-full">

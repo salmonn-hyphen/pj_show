@@ -1,0 +1,62 @@
+[
+  {
+    "userId": "fe752f33-d473-4f35-97b5-86b82af30ddf",
+    "providerId": "credential",
+    "accessToken": "d638c1d1b4ea8de7df4496b8d3f8feae2d1c09bb054ae9b6bfffcd741f6eefa7",
+    "accessTokenExpiresAt": "2026-08-20T16:54:56.571Z",
+    "refreshToken": "28428f8878aaaef045511bdfbf39ad0d1b8c976cc93675e76479a730e5b5470c",
+    "refreshTokenExpiresAt": "2026-09-19T16:39:56.571Z",
+    "user": {
+      "email": "superadmin@taximeikswe.com",
+      "role": "ADMIN"
+    }
+  },
+  {
+    "userId": "052f25bc-8179-4191-bde1-b4228247130b",
+    "providerId": "credential",
+    "accessToken": "cf7f9ebcda599dd876baecbd61bab7da9a34d0237e24aa3617a3d89264eab730",
+    "accessTokenExpiresAt": "2026-08-20T17:24:29.202Z",
+    "refreshToken": "0754f0c7117c134d0d18e6977edbfadacb224ced63632583987317e7e7acce50",
+    "refreshTokenExpiresAt": "2026-09-19T17:09:29.202Z",
+    "user": {
+      "email": "driver.sanchaung@taximeikswe.test",
+      "role": "DRIVER"
+    }
+  },
+  {
+    "userId": "26bf0d61-4848-4988-bdd0-5cfeb48236d7",
+    "providerId": "credential",
+    "accessToken": "f18c5139528e9606cf3763554b5f011bfed5b109c8d9063721cd1cf7b2f1955d",
+    "accessTokenExpiresAt": "2026-08-19T18:50:33.814Z",
+    "refreshToken": "d3213b57cd52ae636c30a663ac968b2fc5f67c44507e0b2d92b4cd305d805a9d",
+    "refreshTokenExpiresAt": "2026-09-18T18:35:33.814Z",
+    "user": {
+      "email": "driver.kamayut@taximeikswe.test",
+      "role": "DRIVER"
+    }
+  },
+  {
+    "userId": "97535ae8-33d5-4f57-a9ba-a88c2f109b1f",
+    "providerId": "credential",
+    "accessToken": "f7259a8a5aa21eb3a2c47541ded1dfb236fa8164d9640169900edc942fc41f3d",
+    "accessTokenExpiresAt": "2026-08-20T17:25:02.943Z",
+    "refreshToken": "d2bafe9239e7f59f50850b5349d49c4e1ee78770a0acdb8cb1aee2776f443151",
+    "refreshTokenExpiresAt": "2026-09-19T17:10:02.943Z",
+    "user": {
+      "email": "owner.seed@taximeikswe.test",
+      "role": "OWNER"
+    }
+  },
+  {
+    "userId": "5f441560-4e15-4cf5-bba8-28e78b57137e",
+    "providerId": "credential",
+    "accessToken": "ab769f1b738ff5f191c04f0c681eaa87c0f326bb2b3dda84e0dcd4f43bb654a6",
+    "accessTokenExpiresAt": "2026-08-20T17:11:46.629Z",
+    "refreshToken": "dc07423d26b143a90196761e781ab5365d3e24d9c133d502a080eefc058463ca",
+    "refreshTokenExpiresAt": "2026-09-19T16:56:46.629Z",
+    "user": {
+      "email": "cybon149@gmail.com",
+      "role": "OWNER"
+    }
+  }
+]

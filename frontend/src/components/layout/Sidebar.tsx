@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, CalendarCheck, Car,
   Users, Shield, Bell, ScrollText, DollarSign, Landmark,
   AlertTriangle, Menu, X, ChevronDown, Gauge,
-  PlusCircle, Lock, WandSparkles,
+  PlusCircle, Lock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth, useRole } from '@/providers'
@@ -32,7 +32,6 @@ const ownerNav = (kycPassed: boolean): NavItem[] => [
       { label: 'Post Car', path: '/owner/cars/new', icon: <PlusCircle className="h-3.5 w-3.5" /> },
     ],
   },
-  { label: 'AI Matchmaker', icon: <WandSparkles className="w-4 h-4" />, path: '/owner/ai-matchmaker', locked: !kycPassed },
   { label: 'Bookings', icon: <CalendarCheck className="w-4 h-4" />, path: '/owner/bookings', locked: !kycPassed },
   { label: 'Payments', icon: <DollarSign className="w-4 h-4" />, path: '/owner/payments', locked: !kycPassed },
   { label: 'Notifications', icon: <Bell className="w-4 h-4" />, path: '/owner/notifications' },

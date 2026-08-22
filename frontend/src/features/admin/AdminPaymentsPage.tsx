@@ -38,10 +38,10 @@ export function AdminPaymentsPage() {
     try {
       setProcessing(id)
       await paymentsApi.confirmPayment(id)
-      addToast('Payment confirmed', 'success')
+      addToast('Payment verified — agreement unlocked if all payments are complete', 'success')
       setPayments((prev) => prev.filter((p) => p.id !== id))
     } catch {
-      addToast('Failed to confirm', 'error')
+      addToast('Failed to verify', 'error')
     } finally {
       setProcessing(null)
     }
@@ -122,7 +122,7 @@ export function AdminPaymentsPage() {
                         <div className="flex items-center gap-2 self-end lg:self-auto">
                           <StatusBadge status={payment.status} type="payment" />
                           <Button size="sm" variant="success" onClick={() => handleConfirm(payment.id)} disabled={processing === payment.id}>
-                            <CheckCircle className="w-4 h-4 mr-1" /> Confirm
+                            <CheckCircle className="w-4 h-4 mr-1" /> Verify
                           </Button>
                           <Button size="sm" variant="destructive" onClick={() => handleReject(payment.id)} disabled={processing === payment.id}>
                             <XCircle className="w-4 h-4 mr-1" /> Reject

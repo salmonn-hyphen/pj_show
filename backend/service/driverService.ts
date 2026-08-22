@@ -1,16 +1,18 @@
-import { findUserByPhone, updateDriverProfile, findDriverProfileByUserId, submitKYCDocuments } from "../respositry/driverRespository.js";
+import { findUserById, updateDriverProfile, findDriverProfileByUserId, submitKYCDocuments } from "../respositry/driverRespository.js";
 import { hashPassword } from "better-auth/crypto";
 
-export async function updateProfile(userId: string, data: { name: string; phone: string; password?: string; address?: string; bio?: string }) {
-  // Check if phone number is already registered by another account
-  const existingUser = await findUserByPhone(data.phone);
-  if (existingUser && existingUser.id !== userId) {
-    throw new Error("Phone number is already in use by another account");
+export async function updateProfile(userId: string, data: { name: string; phone?: string; password?: string; address?: string; bio?: string }) {
+  const currentUser = await findUserById(userId);
+  if (!currentUser) {
+    throw new Error("User not found");
+  }
+
+  if (data.phone !== undefined && data.phone !== currentUser.phone) {
+    throw new Error("Phone number cannot be changed after registration");
   }
 
   const updateData: any = {
     name: data.name,
-    phone: data.phone,
   };
 
   if (data.address !== undefined) {

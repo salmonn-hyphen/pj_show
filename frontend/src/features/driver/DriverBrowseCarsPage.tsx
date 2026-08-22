@@ -97,7 +97,7 @@ export function DriverBrowseCarsPage() {
   const getCarBooking = (carId: string | number) =>
     bookings.find((booking) =>
       String(booking.car_id) === String(carId) &&
-      !['cancelled', 'completed'].includes(String(booking.status)),
+      !['BOOKING_REJECTED'].includes(String(booking.status)),
     )
 
   const getBookingStageLabel = (booking?: Booking) => {
@@ -105,11 +105,11 @@ export function DriverBrowseCarsPage() {
 
     const paymentStatus = booking.payment_status || booking.payment?.status || 'incomplete'
 
-    if (booking.status === 'requested') return 'Request Sent'
-    if (booking.status === 'accepted' && ['incomplete', 'failed'].includes(paymentStatus)) return 'Payment Needed'
-    if (booking.status === 'accepted') return 'Accepted'
-    if (booking.status === 'payment_pending') return 'Payment Pending'
-    if (booking.status === 'active') return 'Rental Active'
+    if (booking.status === 'REQUESTED') return 'Request Sent'
+    if (booking.status === 'PENDING_ADMIN_APPROVAL') return 'Awaiting Admin Review'
+    if (booking.status === 'BOOKING_APPROVED' && ['incomplete', 'PAYMENT_REJECTED'].includes(paymentStatus)) return 'Payment Needed'
+    if (booking.status === 'BOOKING_APPROVED') return 'Approved'
+    if (booking.status === 'BOOKING_REJECTED') return 'Rejected'
 
     return 'View Booking'
   }

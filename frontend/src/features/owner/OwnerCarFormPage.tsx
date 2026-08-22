@@ -65,7 +65,7 @@ const imageLabels = [
 ] as const;
 
 function RequiredMark() {
-  return <span className="text-emerald-600">*</span>;
+  return <span className="text-blue-600">*</span>;
 }
 
 function FieldLabel({
@@ -93,7 +93,7 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-700">
         {icon}
       </div>
       <div>
@@ -287,7 +287,7 @@ function OwnerCarFormContent() {
             review.
           </p>
         </div>
-        <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+        <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">
           <BadgeCheck className="h-4 w-4" />
           Required fields are marked with <RequiredMark />
         </div>

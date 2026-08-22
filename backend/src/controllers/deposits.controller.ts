@@ -252,6 +252,7 @@ export async function cancelBooking(req: Request, res: Response) {
       data: {
         ownerApprovalStatus: "REJECTED",
         adminApprovalStatus: "REJECTED",
+        status: "BOOKING_REJECTED",
         approvedAt: null,
       },
       include: {

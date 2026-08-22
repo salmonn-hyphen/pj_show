@@ -1,0 +1,12 @@
+{
+  "now": "2026-08-20T17:13:20.944Z",
+  "byAccess": {
+    "userId": "97535ae8-33d5-4f57-a9ba-a88c2f109b1f",
+    "accessTokenExpiresAt": "2026-08-20T17:25:02.943Z"
+  },
+  "byRefresh": {
+    "userId": "97535ae8-33d5-4f57-a9ba-a88c2f109b1f",
+    "refreshTokenExpiresAt": "2026-09-19T17:10:02.943Z"
+  },
+  "hash": "d2bafe9239e7f59f50850b5349d49c4e1ee78770a0acdb8cb1aee2776f443151"
+}

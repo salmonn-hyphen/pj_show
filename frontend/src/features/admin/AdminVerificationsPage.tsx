@@ -9,6 +9,7 @@ import {
   DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
 import { adminApi } from '@/api'
+import type { OwnerDocument } from '@/types'
 import { useToast } from '@/providers'
 import { formatDate } from '@/utils/format'
 import {
@@ -39,6 +40,13 @@ interface KYCDriver {
 
 interface Props {
   type: 'owners' | 'drivers' | 'cars'
+}
+
+interface PendingOwner {
+  id: string
+  name: string
+  email?: string | null
+  phone?: string | null
 }
 
 // ─── Shared Document Grid ─────────────────────────────────────────────────────
@@ -175,6 +183,12 @@ export function AdminVerificationsPage({ type }: Props) {
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Owner review modal state
+  const [selectedOwner, setSelectedOwner] = useState<PendingOwner | null>(null)
+  const [ownerDocs, setOwnerDocs] = useState<OwnerDocument[]>([])
+  const [ownerDocsLoading, setOwnerDocsLoading] = useState(false)
+  const [rejectionContext, setRejectionContext] = useState<'drivers' | 'owners'>('drivers')
+
   const title =
     type === 'owners' ? 'Owner Verifications' :
     type === 'drivers' ? 'Driver KYC Verifications' :
@@ -250,13 +264,20 @@ export function AdminVerificationsPage({ type }: Props) {
   }
 
   const handleRejectConfirm = async () => {
-    if (!selectedDriver) return
+    if (!selectedDriver && !selectedOwner) return
     try {
       setProcessing(true)
-      await adminApi.reviewDriverKYC(selectedDriver.id, 'REJECTED', rejectionReason || undefined)
-      addToast(`❌ ${selectedDriver.user.name}'s KYC has been rejected.`, 'success')
-      setPending((prev) => prev.filter((d) => d.id !== selectedDriver.id))
-      setSelectedDriver(null)
+      if (rejectionContext === 'owners' && selectedOwner) {
+        await adminApi.verifyOwner(selectedOwner.id, 'rejected')
+        setItems((prev) => prev.filter((current) => current.id !== selectedOwner.id))
+        addToast(`❌ ${selectedOwner.name}'s verification has been rejected.`, 'success')
+        setSelectedOwner(null)
+      } else if (selectedDriver) {
+        await adminApi.reviewDriverKYC(selectedDriver.id, 'REJECTED', rejectionReason || undefined)
+        addToast(`❌ ${selectedDriver.user.name}'s KYC has been rejected.`, 'success')
+        setPending((prev) => prev.filter((d) => d.id !== selectedDriver.id))
+        setSelectedDriver(null)
+      }
       setShowRejectDialog(false)
       setRejectionReason('')
       setHistoryFetched(false)
@@ -266,6 +287,39 @@ export function AdminVerificationsPage({ type }: Props) {
       setProcessing(false)
     }
   }
+
+  const openOwnerReview = async (owner: PendingOwner) => {
+    setSelectedOwner(owner)
+    setOwnerDocs([])
+    setOwnerDocsLoading(true)
+    try {
+      const docs = await adminApi.getOwnerDocuments(owner.id)
+      setOwnerDocs(docs || [])
+    } catch {
+      setOwnerDocs([])
+    } finally {
+      setOwnerDocsLoading(false)
+    }
+  }
+
+  const handleOwnerApprove = async () => {
+    if (!selectedOwner) return
+    try {
+      setProcessing(true)
+      await adminApi.verifyOwner(selectedOwner.id, 'verified')
+      addToast(`✅ ${selectedOwner.name}'s KYC has been approved.`, 'success')
+      setItems((prev) => prev.filter((current) => current.id !== selectedOwner.id))
+      setSelectedOwner(null)
+    } catch (err) {
+      const apiError = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      addToast(apiError || 'Failed to approve. Please try again.', 'error')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const getOwnerDocUrl = (type: string) =>
+    ownerDocs.find((doc) => doc.type === type)?.file_url || null
 
   const handleReviewOther = async (item: any, status: 'verified' | 'rejected') => {
     try {
@@ -283,6 +337,124 @@ export function AdminVerificationsPage({ type }: Props) {
   }
 
   // ─── Non-driver type simple view ─────────────────────────────────────────
+  if (type === 'owners') {
+    if (loading) return <div className="space-y-6"><h1 className="text-2xl font-bold">{title}</h1><LoadingSkeleton type="list" count={5} /></div>
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold">{title}</h1>
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 rounded-2xl border-2 border-dashed border-slate-200">
+            <ShieldCheck className="w-10 h-10 text-emerald-500 mb-3" />
+            <p className="font-semibold">All clear!</p>
+            <p className="text-sm text-muted-foreground">No pending owner verifications.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {items.map((item: PendingOwner) => (
+              <Card key={item.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => openOwnerReview(item)}>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                      <User className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{item.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">{item.email}</p>
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" className="gap-1.5">
+                    <Eye className="w-3.5 h-3.5" /> Review <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* ─── Owner KYC Review Modal ─────────────────────────────────────── */}
+        <Dialog open={!!selectedOwner} onOpenChange={(o) => { if (!o) setSelectedOwner(null) }}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            {selectedOwner && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <ShieldAlert className="w-5 h-5 text-amber-500" />
+                    Owner KYC Review — {selectedOwner.name}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Inspect the submitted NRC photos, then approve or reject this owner.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-xl bg-slate-50 border border-slate-100 p-3 text-sm">
+                  <span className="flex items-center gap-1.5"><User className="w-4 h-4 text-slate-400" />{selectedOwner.name}</span>
+                  {selectedOwner.email && <span className="flex items-center gap-1.5"><Mail className="w-4 h-4 text-slate-400" />{selectedOwner.email}</span>}
+                  {selectedOwner.phone && <span className="flex items-center gap-1.5"><Phone className="w-4 h-4 text-slate-400" />{selectedOwner.phone}</span>}
+                </div>
+
+                {ownerDocsLoading ? (
+                  <LoadingSkeleton type="card" count={2} />
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {[
+                      { label: 'NRC Front Side', url: getOwnerDocUrl('nrc_front') },
+                      { label: 'NRC Back Side', url: getOwnerDocUrl('nrc_back') },
+                    ].map((doc) => (
+                      <div key={doc.label} className="rounded-xl border border-slate-200 p-3">
+                        <p className="mb-2 text-sm font-semibold">{doc.label}</p>
+                        {doc.url ? (
+                          <img
+                            src={doc.url}
+                            alt={doc.label}
+                            onClick={() => setLightboxUrl(doc.url!)}
+                            className="h-44 w-full cursor-zoom-in rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-44 w-full items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-xs text-muted-foreground">
+                            Not uploaded
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <DialogFooter className="gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setSelectedOwner(null)} disabled={processing}>
+                    Close
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => { setRejectionContext('owners'); setShowRejectDialog(true) }}
+                    disabled={processing}
+                    className="gap-2"
+                  >
+                    <XCircle className="w-4 h-4" /> Reject
+                  </Button>
+                  <Button
+                    onClick={handleOwnerApprove}
+                    disabled={processing}
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {processing
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                      : <><CheckCircle2 className="w-4 h-4" /> Approve</>
+                    }
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Lightbox */}
+        <AnimatePresence>
+          {lightboxUrl && <Lightbox url={lightboxUrl} onClose={() => setLightboxUrl(null)} />}
+        </AnimatePresence>
+      </div>
+    )
+  }
+
   if (type !== 'drivers') {
     if (loading) return <div className="space-y-6"><h1 className="text-2xl font-bold">{title}</h1><LoadingSkeleton type="list" count={5} /></div>
     return (

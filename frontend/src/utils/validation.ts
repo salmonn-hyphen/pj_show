@@ -162,8 +162,10 @@ export const newPasswordSchema = z.object({
 export const profileSchema = z
   .object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
-    phone: z.string().min(7, 'Invalid phone number'),
+    phone: z.string().optional().or(z.literal('')),
     address: z.string().optional(),
+    city: z.string().optional(),
+    township: z.string().optional(),
     bio: z.string().optional(),
     password: z.string().optional().or(z.literal("")),
     password_confirmation: z.string().optional().or(z.literal("")),

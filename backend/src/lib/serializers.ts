@@ -1,3 +1,11 @@
+import {
+  AgreementStatus,
+  type AgreementStatusValue,
+  PaymentStatus,
+  type PaymentStatusValue,
+  deriveBookingStatus,
+} from "./workflow-status.js";
+
 export function toUserVerificationStatus(status?: string | null) {
   if (status === "APPROVED") return "verified";
   if (status === "REJECTED") return "rejected";
@@ -72,6 +80,7 @@ export function serializeUser(user: any) {
     verification_status: toUserVerificationStatus(verificationStatus),
     suspension_reason: null,
     profile_photo_url: toPublicUrl(user.profilePhoto),
+    address: user.address || null,
     city: user.city || null,
     township: user.township || null,
     created_at: user.createdAt.toISOString(),
@@ -177,21 +186,19 @@ export function serializeCar(car: any) {
   };
 }
 
-export function applicationStatusToBookingStatus(status: "PENDING" | "APPROVED" | "REJECTED") {
-  if (status === "APPROVED") return "accepted";
-  if (status === "REJECTED") return "cancelled";
-  return "requested";
+export function applicationToBookingStatus(application: any) {
+  return deriveBookingStatus(application.ownerApprovalStatus, application.adminApprovalStatus);
 }
 
-export function applicationToBookingStatus(application: any) {
-  if (application.ownerApprovalStatus === "REJECTED" || application.adminApprovalStatus === "REJECTED") {
-    return "cancelled";
-  }
-  if (application.payment?.status === "confirmed") return "active";
-  if (application.payment?.status === "under_review") return "payment_pending";
-  if (application.adminApprovalStatus === "APPROVED") return "accepted";
-  if (application.ownerApprovalStatus === "APPROVED") return "accepted";
-  return applicationStatusToBookingStatus(application.ownerApprovalStatus);
+export function serializeAgreementWorkflow(application: any) {
+  const agreementStatus: AgreementStatusValue = application.agreementStatus || AgreementStatus.PENDING_COMMISSION_PAYMENT;
+  const commissionPaymentStatus: PaymentStatusValue | null = application.commissionPaymentStatus || null;
+
+  return {
+    agreement_status: agreementStatus,
+    commission_payment_status: commissionPaymentStatus,
+    is_agreement_locked: commissionPaymentStatus !== PaymentStatus.PAYMENT_VERIFIED,
+  };
 }
 
 export function serializeBooking(application: any) {
@@ -212,6 +219,7 @@ export function serializeBooking(application: any) {
     end_date: endDate,
     total_amount: dailyRate,
     status: applicationToBookingStatus(application),
+    ...serializeAgreementWorkflow(application),
     owner_approval_status: application.ownerApprovalStatus,
     admin_approval_status: application.adminApprovalStatus || "PENDING",
     agreement_sent_at: application.agreementSentAt?.toISOString?.() || null,

@@ -52,6 +52,11 @@ export const bookingsApi = {
     return res.data.data
   },
 
+  sendOwnerAgreement: async (id: string | number): Promise<Booking> => {
+    const res = await apiClient.post(`/owner/bookings/${id}/send-agreement`)
+    return res.data.data
+  },
+
   cancelBooking: async (id: string | number, reason?: string): Promise<Booking> => {
     const res = await apiClient.post(`/bookings/${id}/cancel`, { reason })
     return res.data.data

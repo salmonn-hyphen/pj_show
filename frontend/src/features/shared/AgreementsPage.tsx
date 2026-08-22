@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom'
-import { ArrowRight, BadgeCheck, CalendarDays, Car, Clock, FileText } from 'lucide-react'
+import { ArrowRight, BadgeCheck, CalendarDays, Car, Clock, FileText, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { agreementsApi, type Agreement } from '@/api/agreements'
+import { StatusBadge } from '@/components/shared/StatusBadge'
+import { agreementsApi, AGREEMENT_LOCKED_MESSAGE, type Agreement } from '@/api/agreements'
 import { agreementPath, getAgreementExpireDate } from '@/utils/agreements'
-import { useAuth } from '@/providers'
+import { useAuth, useToast } from '@/providers'
 import { useCachedFetch } from '@/hooks/useCachedFetch'
 import { formatCurrency, formatDate, getInitials } from '@/utils/format'
 
@@ -51,8 +52,16 @@ function PartyRow({
 
 function AgreementCard({ agreement }: { agreement: Agreement }) {
   const { user } = useAuth()
+  const { addToast } = useToast()
   const expireDate = getAgreementExpireDate(agreement)
   const amount = Number(agreement.total_amount || agreement.car?.daily_rate || 0)
+  const isLocked = Boolean(agreement.is_agreement_locked)
+
+  const handleOpen = () => {
+    if (isLocked) {
+      addToast(AGREEMENT_LOCKED_MESSAGE, 'warning')
+    }
+  }
 
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-md">
@@ -77,6 +86,21 @@ function AgreementCard({ agreement }: { agreement: Agreement }) {
           </div>
         </div>
 
+        {isLocked && (
+          <div className="flex items-start gap-2 border-b border-amber-100 bg-amber-50 px-4 py-3">
+            <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-amber-800">{AGREEMENT_LOCKED_MESSAGE}</p>
+              <div className="mt-1.5">
+                <StatusBadge
+                  status={agreement.commission_payment_status || 'PENDING_COMMISSION_PAYMENT'}
+                  type="payment"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2.5 px-4 py-4">
           <PartyRow
             name={agreement.owner?.name}
@@ -97,12 +121,24 @@ function AgreementCard({ agreement }: { agreement: Agreement }) {
             {agreement.agreement_sent_at ? `Sent ${formatDate(agreement.agreement_sent_at)}` : 'Sent recently'}
             {expireDate ? ` · Expires ${formatDate(expireDate.toISOString())}` : ''}
           </p>
-          <Link to={agreementPath(user?.role, agreement.id)}>
-            <Button size="sm" className="bg-slate-950 text-white hover:bg-slate-800">
-              Open Agreement
-              <ArrowRight className="h-4 w-4" />
+          {isLocked ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 border-slate-200 text-slate-400"
+              onClick={handleOpen}
+            >
+              <Lock className="h-4 w-4" />
+              Locked
             </Button>
-          </Link>
+          ) : (
+            <Link to={agreementPath(user?.role, agreement.id)}>
+              <Button size="sm" className="bg-slate-950 text-white hover:bg-slate-800">
+                Open Agreement
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          )}
         </div>
       </CardContent>
     </Card>

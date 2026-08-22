@@ -55,7 +55,6 @@ export function DriverProfilePage() {
       // Clean up empty password fields so we don't send empty strings to the backend
       const payload: Partial<ProfileFormData> = {
         name: data.name,
-        phone: data.phone,
       };
       if (data.password && data.password.trim() !== "") {
         payload.password = data.password;
@@ -236,16 +235,12 @@ export function DriverProfilePage() {
                       <Input 
                         id="profile-phone"
                         placeholder="Phone number" 
-                        className="pl-9"
-                        {...register('phone')} 
+                        value={user?.phone || ''} 
+                        disabled
+                        className="pl-9 cursor-not-allowed border-dashed bg-slate-50"
                       />
                     </div>
-                    {errors.phone && (
-                      <p className="text-xs text-red-500 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" />
-                        {errors.phone.message}
-                      </p>
-                    )}
+                    <p className="text-xs text-slate-400">Phone numbers are unique account identifiers and cannot be updated.</p>
                   </div>
                 </div>
 

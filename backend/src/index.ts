@@ -24,7 +24,6 @@ import agreementsRouter from './routes/agreements.routes.js';
 import bookingPaymentsRouter from './routes/booking-payments.routes.js';
 import depositsRouter from './routes/deposits.routes.js';
 import notificationsRouter from './routes/notifications.routes.js';
-import aiMatchingRouter from './routes/ai-matching.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,11 +63,15 @@ app.use("/api/agreements", agreementsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api", bookingPaymentsRouter);
 app.use("/api", depositsRouter);
-app.use("/api", aiMatchingRouter);
 
 // Better Auth handler (must come LAST)
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+});
+
+import { ensureWorkflowStorage } from "./lib/workflow-status.js";
+ensureWorkflowStorage().catch((error) => {
+  console.error("Workflow storage bootstrap error:", error);
 });

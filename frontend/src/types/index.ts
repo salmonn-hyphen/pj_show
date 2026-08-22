@@ -18,22 +18,25 @@ export type VerificationStatus =
   (typeof VerificationStatus)[keyof typeof VerificationStatus];
 
 export const BookingStatus = {
-  Requested: "requested",
-  Accepted: "accepted",
-  PaymentPending: "payment_pending",
-  Active: "active",
-  Completed: "completed",
-  Cancelled: "cancelled",
+  Requested: "REQUESTED",
+  PendingAdminApproval: "PENDING_ADMIN_APPROVAL",
+  Approved: "BOOKING_APPROVED",
+  Rejected: "BOOKING_REJECTED",
 } as const;
 export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus];
 
+export const AgreementStatus = {
+  PendingCommissionPayment: "PENDING_COMMISSION_PAYMENT",
+  Active: "ACTIVE",
+} as const;
+export type AgreementStatus =
+  (typeof AgreementStatus)[keyof typeof AgreementStatus];
+
 export const PaymentStatus = {
   Incomplete: "incomplete",
-  Pending: "pending",
-  UnderReview: "under_review",
-  Confirmed: "confirmed",
-  Failed: "failed",
-  Refunded: "refunded",
+  PendingVerification: "PENDING_PAYMENT_VERIFICATION",
+  Verified: "PAYMENT_VERIFIED",
+  Rejected: "PAYMENT_REJECTED",
 } as const;
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
 
@@ -103,6 +106,7 @@ export interface User {
   verification_status: VerificationStatus;
   suspension_reason: string | null;
   profile_photo_url: string | null;
+  address?: string | null;
   city?: string | null;
   township?: string | null;
   created_at: string;
@@ -243,9 +247,14 @@ export interface Booking {
   end_date: string;
   total_amount: number;
   status: BookingStatus;
+  owner_approval_status?: "PENDING" | "APPROVED" | "REJECTED" | null;
+  admin_approval_status?: "PENDING" | "APPROVED" | "REJECTED" | null;
   agreement_sent_at?: string | null;
   owner_agreement_agreed_at?: string | null;
   driver_agreement_agreed_at?: string | null;
+  agreement_status?: AgreementStatus | null;
+  commission_payment_status?: PaymentStatus | null;
+  is_agreement_locked?: boolean;
   driver_notes: string | null;
   owner_notes: string | null;
   rejection_reason: string | null;
