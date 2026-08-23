@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { CarFront, CheckCircle2, Search, SlidersHorizontal } from 'lucide-react'
+import { AlertCircle, CarFront, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { CarCard } from '@/components/shared/CarCard'
+import { CarDetailModal } from '@/components/shared/CarDetailModal'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { bookingsApi, carsApi } from '@/api'
 import { useToast } from '@/providers'
@@ -23,6 +24,9 @@ export function DriverBrowseCarsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedCar, setSelectedCar] = useState<Car | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalApplying, setModalApplying] = useState(false)
 
   const isMobile = useMemo(() => typeof window !== 'undefined' && window.innerWidth < 768, [])
   const perPage = isMobile ? PER_PAGE_MOBILE : PER_PAGE_DESKTOP
@@ -71,12 +75,45 @@ export function DriverBrowseCarsPage() {
   const totalPages = Math.ceil(filtered.length / perPage)
   const paginated = filtered.slice((page - 1) * perPage, page * perPage)
 
+  const ACTIVE_STATUSES = ['REQUESTED', 'PENDING_ADMIN_APPROVAL', 'BOOKING_APPROVED']
+  const activeBooking = bookings.find((b) => ACTIVE_STATUSES.includes(b.status))
+  const hasActiveBooking = !!activeBooking
+
   const handlePage = (p: number) => { setPage(p); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const clearFilters = () => {
     setSearch('')
     setFuelFilter('all')
     setTransmissionFilter('all')
     setPage(1)
+  }
+
+  const handleViewCar = (carId: string | number) => {
+    const car = cars.find((item) => String(item.id) === String(carId))
+    if (car) {
+      setSelectedCar(car)
+      setModalOpen(true)
+    }
+  }
+
+  const handleModalApply = async (carId: string | number) => {
+    const car = cars.find((item) => String(item.id) === String(carId))
+    if (!car) return
+
+    try {
+      setModalApplying(true)
+      const booking = await bookingsApi.create(carId, {
+        driver_notes: `Borrow request for ${car.brand} ${car.model}`,
+      })
+      setBookings((current) => [booking, ...current])
+      addToast('Application sent to the owner.', 'success')
+      setModalOpen(false)
+      setSelectedCar(null)
+      navigate(`/driver/bookings/${booking.id}`)
+    } catch (err: any) {
+      addToast(err.response?.data?.error || 'Failed to send application.', 'error')
+    } finally {
+      setModalApplying(false)
+    }
   }
 
   const handleApply = async (carId: string | number) => {
@@ -148,6 +185,23 @@ export function DriverBrowseCarsPage() {
         </div>
       </div>
 
+      {hasActiveBooking && (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <p>
+            You already have an active booking. Please complete or cancel it before applying for another car.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto shrink-0 border-amber-300 text-amber-800 hover:bg-amber-100"
+            onClick={() => navigate(`/driver/bookings/${activeBooking.id}`)}
+          >
+            View Booking
+          </Button>
+        </div>
+      )}
+
       {loading ? (
         <LoadingSkeleton type="card" count={8} />
       ) : error ? (
@@ -163,7 +217,7 @@ export function DriverBrowseCarsPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {paginated.map((car) => {
               const booking = getCarBooking(car.id)
 
@@ -171,10 +225,11 @@ export function DriverBrowseCarsPage() {
                 <CarCard
                   key={car.id}
                   car={car}
-                  onView={(id) => navigate(`/driver/cars/${id}`)}
+                  onView={handleViewCar}
                   onBook={handleApply}
                   bookingStageLabel={getBookingStageLabel(booking)}
                   onBookingStageClick={booking ? () => navigate(`/driver/bookings/${booking.id}`) : undefined}
+                  applyDisabled={hasActiveBooking && !booking}
                 />
               )
             })}
@@ -199,6 +254,16 @@ export function DriverBrowseCarsPage() {
           )}
         </>
       )}
+
+      <CarDetailModal
+        car={selectedCar}
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setSelectedCar(null) }}
+        onApply={handleModalApply}
+        bookingStageLabel={selectedCar ? getBookingStageLabel(getCarBooking(selectedCar.id)) : undefined}
+        applying={modalApplying}
+        applyDisabled={hasActiveBooking && !(selectedCar && getCarBooking(selectedCar.id))}
+      />
     </div>
   )
 }

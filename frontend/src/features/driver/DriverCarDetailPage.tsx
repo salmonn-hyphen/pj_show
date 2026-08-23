@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  ChevronLeft, ChevronRight, Fuel, Gauge, Users, MapPin, CalendarDays, Hash, Palette, Phone, Mail, ShieldCheck, GaugeCircle, Clock,
+  ChevronLeft, ChevronRight, Fuel, Gauge, Users, MapPin, CalendarDays, Hash, Palette, Mail, ShieldCheck, GaugeCircle, Clock,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -244,7 +244,6 @@ export function DriverCarDetailPage() {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      {car.owner?.phone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {car.owner.phone}</span>}
                       {car.owner?.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {car.owner.email}</span>}
                     </div>
                   </div>
