@@ -6,6 +6,8 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
 import { adminApi } from '@/api'
 import { useToast } from '@/providers'
 import type { User } from '@/types'
@@ -18,6 +20,9 @@ export function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [roleFilter, setRoleFilter] = useState('')
   const [processing, setProcessing] = useState<string | number | null>(null)
+  const [suspendDialogOpen, setSuspendDialogOpen] = useState(false)
+  const [suspendUserId, setSuspendUserId] = useState<string | number | null>(null)
+  const [suspendReason, setSuspendReason] = useState('')
 
   useEffect(() => {
     loadUsers()
@@ -34,11 +39,15 @@ export function AdminUsersPage() {
     }
   }
 
-  const handleSuspend = async (userId: string | number, reason: string) => {
+  const handleSuspend = async () => {
+    if (!suspendUserId || !suspendReason.trim()) return
     try {
-      setProcessing(userId)
-      await adminApi.suspendUser(userId, reason)
+      setProcessing(suspendUserId)
+      await adminApi.suspendUser(suspendUserId, suspendReason)
       addToast('User suspended', 'success')
+      setSuspendDialogOpen(false)
+      setSuspendUserId(null)
+      setSuspendReason('')
       loadUsers()
     } catch {
       addToast('Failed to suspend', 'error')
@@ -58,6 +67,12 @@ export function AdminUsersPage() {
     } finally {
       setProcessing(null)
     }
+  }
+
+  const openSuspendDialog = (userId: string | number) => {
+    setSuspendUserId(userId)
+    setSuspendReason('')
+    setSuspendDialogOpen(true)
   }
 
   if (loading) return <LoadingSkeleton type="list" count={8} />
@@ -100,7 +115,7 @@ export function AdminUsersPage() {
                           <Shield className="w-4 h-4 mr-1" /> Unsuspend
                         </Button>
                       ) : (
-                        <Button size="sm" variant="destructive" onClick={() => handleSuspend(user.id, 'Admin action')} disabled={processing === user.id}>
+                        <Button size="sm" variant="destructive" onClick={() => openSuspendDialog(user.id)} disabled={processing === user.id}>
                           <ShieldOff className="w-4 h-4 mr-1" /> Suspend
                         </Button>
                       )}
@@ -112,6 +127,34 @@ export function AdminUsersPage() {
           ))}
         </div>
       )}
+
+      <Dialog open={suspendDialogOpen} onOpenChange={setSuspendDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Suspend User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label className="text-xs">Reason for suspension</Label>
+            <textarea
+              rows={3}
+              className="flex w-full rounded-lg border text-black border-input bg-background px-3 py-2 text-sm"
+              placeholder="Enter reason for suspension..."
+              value={suspendReason}
+              onChange={(e) => setSuspendReason(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setSuspendDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleSuspend}
+              disabled={!suspendReason.trim() || processing === suspendUserId}
+            >
+              Suspend User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

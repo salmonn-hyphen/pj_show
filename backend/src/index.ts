@@ -20,6 +20,8 @@ import ownerBookingsRouter from './routes/owner-bookings.routes.js';
 import adminBookingsRouter from './routes/admin-bookings.routes.js';
 import adminVerificationsRouter from './routes/admin-verifications.routes.js';
 import adminDriverRouter from './routes/admin-driver-verifications.routes.js';
+import adminUsersRouter from './routes/admin-users.routes.js';
+import adminDashboardRouter from './routes/admin-dashboard.routes.js';
 import agreementsRouter from './routes/agreements.routes.js';
 import bookingPaymentsRouter from './routes/booking-payments.routes.js';
 import depositsRouter from './routes/deposits.routes.js';
@@ -54,8 +56,10 @@ app.use("/api/owner/cars", ownerCarsRouter);
 app.use("/api/owner/bookings", ownerBookingsRouter);
 
 // Admin routes
+app.use("/api/admin", adminDashboardRouter);
 app.use("/api/admin", adminDriverRouter);
 app.use("/api/admin", adminVerificationsRouter);
+app.use("/api/admin", adminUsersRouter);
 app.use("/api/admin/bookings", adminBookingsRouter);
 
 // Shared routes

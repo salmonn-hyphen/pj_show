@@ -60,7 +60,7 @@ export function serializeOwnerDocuments(ownerProfile: any) {
   ];
 }
 
-export function serializeUser(user: any) {
+export function serializeUser(user: any, suspensionReason?: string | null) {
   const ownerApprovalStatus = user.role === "OWNER" ? user.ownerProfile?.adminApprovalStatus : null;
   const driverKycStatus = user.role === "DRIVER" ? user.driverProfile?.kycStatus : null;
   const verificationStatus =
@@ -70,6 +70,8 @@ export function serializeUser(user: any) {
         ? driverKycStatus
         : user.verificationStatus;
 
+  const isSuspended = user.isActive === false;
+
   return {
     id: user.id,
     name: user.name,
@@ -77,8 +79,8 @@ export function serializeUser(user: any) {
     phone: user.phone || "",
     role: user.role,
     email_verified_at: user.emailVerified ? user.updatedAt.toISOString() : null,
-    verification_status: toUserVerificationStatus(verificationStatus),
-    suspension_reason: null,
+    verification_status: isSuspended ? "suspended" : toUserVerificationStatus(verificationStatus),
+    suspension_reason: suspensionReason || null,
     profile_photo_url: toPublicUrl(user.profilePhoto),
     address: user.address || null,
     city: user.city || null,

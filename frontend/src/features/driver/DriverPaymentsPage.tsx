@@ -149,10 +149,9 @@ export function DriverPaymentsPage() {
                                 <p className="text-xs text-muted-foreground">{paymentPurpose}</p>
                               </div>
                               <p className="text-xl font-semibold text-foreground">
-                                {formatCurrency(payment.amount)}
                                 {payment.commission_amount ? (
-                                  <span className="text-xl font-semibold text-foreground ml-2">
-                                    +  {formatCurrency(payment.commission_amount)} commission
+                                  <span className="text-xl font-semibold text-foreground">
+                                    {formatCurrency(payment.commission_amount)}
                                   </span>
                                 ) : null}
                               </p>

@@ -499,9 +499,11 @@ export interface AdminDashboardStats {
   pending_driver_verifications: number;
   pending_car_verifications: number;
   active_bookings: number;
+  available_cars: number;
   active_disputes: number;
   pending_payment_approvals: number;
   total_revenue: number;
   recent_activities: AdminAction[];
   revenue_chart: { month: string; amount: number }[];
+  user_growth: { month: string; count: number }[];
 }

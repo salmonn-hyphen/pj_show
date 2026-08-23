@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Users, Car, DollarSign, AlertTriangle, CalendarCheck, Shield, ArrowRight, CreditCard } from 'lucide-react'
+import { Bar, BarChart, Line, LineChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Users, Car, DollarSign, CalendarCheck, Shield, CreditCard } from 'lucide-react'
 import { StatsCard } from '@/components/shared/StatsCard'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { adminApi } from '@/api'
-import { formatCurrency, formatDateTime } from '@/utils/format'
+import { formatCurrency } from '@/utils/format'
 import type { AdminDashboardStats } from '@/types'
 
 export function AdminDashboardPage() {
@@ -32,10 +31,6 @@ export function AdminDashboardPage() {
   }
 
   if (loading) return <LoadingSkeleton type="detail" count={6} />
-  const totalPendingVerifications =
-    (stats?.pending_owner_verifications || 0) +
-    (stats?.pending_driver_verifications || 0) +
-    (stats?.pending_car_verifications || 0)
 
   return (
     <div className="space-y-6">
@@ -48,7 +43,7 @@ export function AdminDashboardPage() {
         <StatsCard title="Total Users" value={stats?.total_users || 0} icon={<Users className="w-5 h-5" />} />
         <StatsCard title="Total Revenue" value={formatCurrency(stats?.total_revenue || 0)} icon={<DollarSign className="w-5 h-5" />} />
         <StatsCard title="Active Bookings" value={stats?.active_bookings || 0} icon={<CalendarCheck className="w-5 h-5" />} />
-        <StatsCard title="Pending Reviews" value={totalPendingVerifications} icon={<Shield className="w-5 h-5" />} />
+        <StatsCard title="Available Cars" value={stats?.available_cars || 0} icon={<Car className="w-5 h-5" />} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)] sm:gap-6">
@@ -94,36 +89,49 @@ export function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="overflow-hidden border-slate-200">
           <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-sm">Recent Activities</h2>
-              <Link to="/admin/audit-log">
-                <Button size="sm" variant="ghost" className="text-xs gap-1">
-                  View All <ArrowRight className="w-3 h-3" />
-                </Button>
-              </Link>
+            <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-950">User Growth</h2>
+                <p className="text-xs text-muted-foreground">New owner & driver registrations.</p>
+              </div>
+              <p className="text-lg font-semibold text-blue-600">{stats?.total_users || 0} total</p>
             </div>
-            {stats?.recent_activities && stats.recent_activities.length > 0 ? (
-              <div className="space-y-3">
-                {stats.recent_activities.slice(0, 6).map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-                    <div className="mt-1 flex h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-                    <div className="min-w-0">
-                      <p className="text-slate-800 line-clamp-2">{activity.description}</p>
-                      <p className="text-xs text-slate-500">{formatDateTime(activity.created_at)}</p>
-                    </div>
-                  </div>
-                ))}
+            {stats?.user_growth && stats.user_growth.length > 0 ? (
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={stats.user_growth} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#64748b', fontSize: 12 }}
+                      width={30}
+                    />
+                    <Tooltip
+                      cursor={{ fill: '#eff6ff' }}
+                      formatter={(value) => [value, 'Users']}
+                      labelClassName="text-xs text-slate-500"
+                      contentStyle={{
+                        borderRadius: 8,
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 10px 24px rgb(15 23 42 / 0.08)',
+                      }}
+                    />
+                    <Line type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={2} dot={{ fill: '#2563eb', r: 4 }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             ) : (
-              <p className="text-sm text-slate-500">No recent activities</p>
+              <p className="py-16 text-center text-sm text-slate-500">No user data yet</p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* <Card className="border-slate-200">
+      <Card className="border-slate-200">
         <CardContent className="p-4 sm:p-6">
           <h2 className="font-semibold text-sm mb-4 text-slate-950">Admin Work Queue</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -132,7 +140,6 @@ export function AdminDashboardPage() {
             { label: 'Driver Verifications', count: stats?.pending_driver_verifications, href: '/admin/verifications/drivers', icon: <Users className="h-4 w-4" /> },
             { label: 'Car Verifications', count: stats?.pending_car_verifications, href: '/admin/verifications/cars', icon: <Car className="h-4 w-4" /> },
             { label: 'Pending Payments', count: stats?.pending_payment_approvals, href: '/admin/payments', icon: <CreditCard className="h-4 w-4" /> },
-            { label: 'Active Disputes', count: stats?.active_disputes, href: '/admin/disputes', icon: <AlertTriangle className="h-4 w-4" /> },
           ].map((action) => (
             <Link key={action.label} to={action.href} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
               <div className="flex items-start justify-between gap-3">
@@ -148,7 +155,7 @@ export function AdminDashboardPage() {
           ))}
           </div>
         </CardContent>
-      </Card> */}
+      </Card>
     </div>
   )
 }

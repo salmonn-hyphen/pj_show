@@ -58,12 +58,10 @@ const adminNav: NavItem[] = [
   { label: 'Verify Cars', icon: <Car className="w-4 h-4" />, path: '/admin/verifications/cars' },
   { label: 'Bookings', icon: <CalendarCheck className="w-4 h-4" />, path: '/admin/bookings' },
   { label: 'Payments', icon: <DollarSign className="w-4 h-4" />, path: '/admin/payments' },
-  { label: 'Disputes', icon: <AlertTriangle className="w-4 h-4" />, path: '/admin/disputes' },
   { label: 'Users', icon: <Users className="w-4 h-4" />, path: '/admin/users' },
   { label: 'Deposits', icon: <Landmark className="w-4 h-4" />, path: '/admin/deposits' },
   { label: 'Notifications', icon: <Bell className="w-4 h-4" />, path: '/admin/notifications' },
   { label: 'Agreements', icon: <FileText className="w-4 h-4" />, path: '/admin/agreements' },
-  { label: 'Audit Log', icon: <ScrollText className="w-4 h-4" />, path: '/admin/audit-log' },
 ]
 
 export function Sidebar() {
