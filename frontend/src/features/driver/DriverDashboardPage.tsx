@@ -4,14 +4,19 @@ import { motion } from 'framer-motion'
 import {
   CalendarCheck, Car, CreditCard, FileCheck, MessageSquare, User,
   ShieldAlert, ShieldEllipsis, XCircle,
-  ArrowRight,
+  ArrowRight, Clock, CheckCircle2,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { StatsCard } from '@/components/shared/StatsCard'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { usersApi } from '@/api'
+import { driversApi } from './driverApi'
 import { useAuth } from '@/providers'
 import { isKycApproved, normalizeVerificationStatus } from '@/constants'
+import { formatCurrency, formatDate } from '@/utils/format'
+import type { DriverDashboardStats, Car as CarType } from '@/types'
 
 const featureCards = [
   {
@@ -56,15 +61,6 @@ const featureCards = [
     action: 'Profile',
     icon: User,
   },
-]
-
-const workflowSteps = [
-  'Complete KYC verification',
-  'Browse available verified cars',
-  'Send a rental request',
-  'Wait for owner and admin approval',
-  'Submit payment and deposit proof',
-  'Start and manage the rental',
 ]
 
 function KYCAlert({ status }: { status: string }) {
@@ -114,6 +110,7 @@ export function DriverDashboardPage() {
   const { user } = useAuth()
   const [kycStatus, setKycStatus] = useState(user?.verification_status || 'unverified')
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<DriverDashboardStats | null>(null)
 
   useEffect(() => {
     setKycStatus(user?.verification_status || 'unverified')
@@ -123,9 +120,13 @@ export function DriverDashboardPage() {
     const loadDashboard = async () => {
       try {
         setLoading(true)
-        const kycRes = await usersApi.getKycStatus()
+        const [kycRes, dashboardRes] = await Promise.all([
+          usersApi.getKycStatus(),
+          driversApi.getDashboard(),
+        ])
 
         setKycStatus(kycRes?.kycStatus || user?.verification_status || 'unverified')
+        setStats(dashboardRes)
       } catch {
         setKycStatus(user?.verification_status || 'unverified')
       } finally {
@@ -139,6 +140,8 @@ export function DriverDashboardPage() {
   if (loading) return <LoadingSkeleton type="detail" count={3} />
 
   const kycPassed = isKycApproved(kycStatus)
+  const recentBookings = stats?.recent_bookings || []
+  const recommendedCars = stats?.recommended_cars || []
 
   return (
     <div className="space-y-6">
@@ -151,36 +154,106 @@ export function DriverDashboardPage() {
 
       {user && <KYCAlert status={kycStatus} />}
 
-      <Card>
-        <CardContent className="p-4 sm:p-6">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                Driver workspace
-              </p>
-              <h2 className="mt-2 text-xl font-semibold text-slate-950">
-                Everything you need to rent cars from verified owners
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Use this dashboard as a starting point for the whole driver workflow:
-                verification, browsing cars, rental requests, payments, agreements,
-                notifications, and profile management.
-              </p>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+        <StatsCard
+          title="Active Bookings"
+          value={stats?.active_bookings ?? 0}
+          icon={<CalendarCheck className="w-5 h-5" />}
+          description="Currently renting"
+        />
+        <StatsCard
+          title="Completed"
+          value={stats?.completed_bookings ?? 0}
+          icon={<CheckCircle2 className="w-5 h-5" />}
+          description="Total completed rentals"
+        />
+        <StatsCard
+          title="Pending"
+          value={stats?.pending_bookings ?? 0}
+          icon={<Clock className="w-5 h-5" />}
+          description="Awaiting approval"
+        />
+        <StatsCard
+          title="KYC Status"
+          value={kycPassed ? 'Verified' : 'Pending'}
+          icon={<FileCheck className="w-5 h-5" />}
+          description={kycPassed ? 'Account ready' : 'Verification required'}
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)] sm:gap-6">
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-sm">Recent Bookings</h2>
+              <Link to="/driver/bookings">
+                <Button size="sm" variant="ghost" className="text gap-1">
+                  View All <ArrowRight className="w-3 h-3" />
+                </Button>
+              </Link>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-medium text-slate-500">Account readiness</p>
-              <p className="mt-1 text-lg font-semibold text-slate-950">
-                {kycPassed ? 'Ready to rent' : 'KYC required'}
-              </p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                {kycPassed
-                  ? 'You can browse cars and submit rental requests.'
-                  : 'Complete KYC first to unlock booking features.'}
-              </p>
+            {recentBookings.length > 0 ? (
+              <div className="space-y-3">
+                {recentBookings.slice(0, 5).map((booking) => (
+                  <div key={booking.id} className="flex items-center justify-between gap-2 py-2 border-b last:border-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {booking.car?.brand} {booking.car?.model}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {formatDate(booking.start_date)} - {formatDate(booking.end_date)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-semibold">{formatCurrency(booking.total_amount)}</span>
+                      <StatusBadge status={booking.status} type="booking" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-4 text-center">No recent bookings</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-sm">Recommended Cars</h2>
+              <Link to="/driver/cars">
+                <Button size="sm" variant="ghost" className="text gap-1">
+                  Browse All <ArrowRight className="w-3 h-3" />
+                </Button>
+              </Link>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            {recommendedCars.length > 0 ? (
+              <div className="space-y-3">
+                {recommendedCars.slice(0, 3).map((car) => (
+                  <div key={car.id} className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {car.brand} {car.model}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {car.year} · {car.city}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{formatCurrency(car.daily_rate)}/day</p>
+                    </div>
+                    <Link to={`/driver/cars/${car.id}`}>
+                      <Button size="sm" variant="outline" className="shrink-0">
+                        View
+                      </Button>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-4 text-center">No recommendations yet</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {featureCards.map((feature) => {
@@ -215,51 +288,6 @@ export function DriverDashboardPage() {
             </Card>
           )
         })}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <h2 className="text-sm font-semibold text-slate-950">Driver workflow</h2>
-            <div className="mt-4 space-y-3">
-              {workflowSteps.map((step, index) => (
-                <div key={step} className="flex items-center gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                    {index + 1}
-                  </span>
-                  <p className="text-sm text-slate-600">{step}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <h2 className="text-sm font-semibold text-slate-950">Quick start</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              New drivers should complete KYC first. After approval, browse available cars,
-              open a car detail page to review full terms, and submit a rental request.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link to="/driver/documents">
-                <Button size="sm" variant={kycPassed ? 'outline' : 'default'}>
-                  Complete KYC
-                </Button>
-              </Link>
-              <Link to="/driver/cars">
-                <Button size="sm" variant="outline">
-                  Browse Cars
-                </Button>
-              </Link>
-              <Link to="/driver/bookings">
-                <Button size="sm" variant="outline">
-                  My Booking
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

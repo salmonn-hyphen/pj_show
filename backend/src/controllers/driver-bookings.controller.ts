@@ -40,6 +40,18 @@ export const createDriverBooking = async (req: Request, res: Response) => {
         return null;
       }
 
+      const activeBooking = await prisma.carApplication.findFirst({
+        where: {
+          driverId: authUser.id,
+          status: { in: ["REQUESTED", "PENDING_ADMIN_APPROVAL", "BOOKING_APPROVED"] },
+        },
+      });
+
+      if (activeBooking) {
+        res.status(403).json({ error: "You already have an active booking. Please complete or cancel it before applying for another car." });
+        return null;
+      }
+
       await ensureCarApplicationStorage();
       await ensureWorkflowStorage();
 

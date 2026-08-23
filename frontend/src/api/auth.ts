@@ -12,9 +12,10 @@ function mapBackendUser(baUser: any): User {
     email_verified_at: baUser.emailVerified ? new Date().toISOString() : null,
     verification_status: baUser.verificationStatus as any || 'unverified',
     suspension_reason: null,
-    // Session stores relative paths (e.g. /uploads/profile/x.png); make them absolute
-    // against the backend origin so avatars render regardless of which page set the user.
     profile_photo_url: resolveFileUrl(baUser.image) || resolveFileUrl(baUser.profilePhoto),
+    address: baUser.address || null,
+    city: baUser.city || null,
+    township: baUser.township || null,
     created_at: baUser.createdAt ? new Date(baUser.createdAt).toISOString() : new Date().toISOString(),
     updated_at: baUser.updatedAt ? new Date(baUser.updatedAt).toISOString() : new Date().toISOString(),
   }

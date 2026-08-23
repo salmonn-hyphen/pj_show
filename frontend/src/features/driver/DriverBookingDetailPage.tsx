@@ -9,7 +9,7 @@ import { LoadingSkeleton } from '@/components/shared/LoadingSkeleton'
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 import { FileUploader } from '@/components/shared/FileUploader'
 import { PAYMENT_METHODS } from '@/constants'
-import { bookingsApi, paymentsApi, depositsApi } from '@/api'
+import { bookingsApi, paymentsApi } from '@/api'
 import { useToast } from '@/providers'
 import type { Booking } from '@/types'
 import { formatDate, formatCurrency, bookingRef } from '@/utils/format'
@@ -30,7 +30,6 @@ export function DriverBookingDetailPage() {
   const [loading, setLoading] = useState(true)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
-  const [showDepositForm, setShowDepositForm] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('kbzpay')
 
   const availablePaymentMethods = PAYMENT_METHODS.filter((method) =>
@@ -96,21 +95,6 @@ export function DriverBookingDetailPage() {
       loadBooking(booking.id)
     } catch {
       addToast('Payment upload failed', 'error')
-    }
-  }
-
-  const handleDepositUpload = async (file: File) => {
-    if (!booking) return
-    try {
-      const formData = new FormData()
-      formData.append('payment_method', paymentMethod)
-      formData.append('screenshot', file)
-      await depositsApi.submitDeposit(booking.id, formData)
-      addToast('Deposit submitted', 'success')
-      setShowDepositForm(false)
-      loadBooking(booking.id)
-    } catch {
-      addToast('Deposit upload failed', 'error')
     }
   }
 
@@ -202,9 +186,6 @@ export function DriverBookingDetailPage() {
               {canSubmitPayment && !showPaymentForm && (
                 <Button onClick={() => setShowPaymentForm(true)}><DollarSign className="w-4 h-4" /> Submit Payment</Button>
               )}
-              {paymentStatus === 'PAYMENT_VERIFIED' && agreementComplete && depositStatus === 'incomplete' && !showDepositForm && (
-                <Button onClick={() => setShowDepositForm(true)}><Shield className="w-4 h-4" /> Submit Deposit</Button>
-              )}
               {booking.status === 'BOOKING_APPROVED' && agreementComplete && (
                 <Button onClick={() => navigate(`/driver/reviews?booking=${booking.id}`)}><Star className="w-4 h-4" /> Leave Review</Button>
               )}
@@ -226,22 +207,6 @@ export function DriverBookingDetailPage() {
                     onSelect={setPaymentMethod}
                   />
                   <FileUploader label="Upload payment proof" onUpload={handlePaymentUpload} />
-                </CardContent>
-              </Card>
-            )}
-
-            {showDepositForm && (
-              <Card>
-                <CardContent className="space-y-4 p-4">
-                  <PaymentMethodPanel
-                    title="Deposit Method"
-                    amount={booking.deposit?.amount}
-                    methods={availablePaymentMethods}
-                    selectedMethod={paymentMethod}
-                    agencyPayment={selectedAgencyPayment}
-                    onSelect={setPaymentMethod}
-                  />
-                  <FileUploader label="Upload deposit proof" onUpload={handleDepositUpload} />
                 </CardContent>
               </Card>
             )}
